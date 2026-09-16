@@ -1,3 +1,3 @@
 export default {
-  ignore: ["LICENSE", "src/rules.js", "tests/fixtures/**"],
+  ignore: ["RELEASE.md", "LICENSE", "src/rules.js", "tests/fixtures/**"],
 };
