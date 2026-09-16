@@ -1,0 +1,26 @@
+{
+  "solution": {
+    "nollm": {
+      "impact": "minor",
+      "oldVersion": "0.0.0",
+      "newVersion": "0.1.0",
+      "tagName": "latest",
+      "constraints": [
+        {
+          "impact": "minor",
+          "reason": "Appears in changelog section :rocket: Enhancement"
+        },
+        {
+          "impact": "patch",
+          "reason": "Appears in changelog section :memo: Documentation"
+        },
+        {
+          "impact": "patch",
+          "reason": "Appears in changelog section :house: Internal"
+        }
+      ],
+      "pkgJSONPath": "./package.json"
+    }
+  },
+  "description": "## Release (2026-09-16)\n\n* nollm 0.1.0 (minor)\n\n#### :rocket: Enhancement\n* `nollm`\n  * [#1](https://github.com/NullVoxPopuli/nollm/pull/1) Add the nollm package: a parallel LLMism linter ([@NullVoxPopuli-ai-agent](https://github.com/NullVoxPopuli-ai-agent))\n\n#### :memo: Documentation\n* `nollm`\n  * [#4](https://github.com/NullVoxPopuli/nollm/pull/4) Add project creation image to README ([@NullVoxPopuli](https://github.com/NullVoxPopuli))\n\n#### :house: Internal\n* `nollm`\n  * [#2](https://github.com/NullVoxPopuli/nollm/pull/2) Release-plan ([@NullVoxPopuli](https://github.com/NullVoxPopuli))\n\n#### Committers: 2\n- @NullVoxPopuli's reduced-access machine account for AI usage ([@NullVoxPopuli-ai-agent](https://github.com/NullVoxPopuli-ai-agent))\n- [@NullVoxPopuli](https://github.com/NullVoxPopuli)\n"
+}
