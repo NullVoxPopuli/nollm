@@ -1,0 +1,58 @@
+{
+  "name": "nollm",
+  "version": "0.0.0",
+  "description": "lint against LLMisms in your codebase",
+  "keywords": [
+    "comments",
+    "lint",
+    "llm",
+    "markdown",
+    "prose"
+  ],
+  "license": "MIT",
+  "author": "NullVoxPopuli",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NullVoxPopuli/nollm.git"
+  },
+  "bin": {
+    "nollm": "bin/nollm.js"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "type": "module",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "scripts": {
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "lint": "oxlint && pnpm format:check && publint && pnpm lint:prose",
+    "lint:fix": "oxlint --fix && oxfmt",
+    "lint:prose": "node bin/nollm.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "ignore": "^7.0.9",
+    "lilconfig": "^3.1.3",
+    "tinypool": "^2.2.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node-lts": "^24.0.1",
+    "oxfmt": "^0.68.0",
+    "oxlint": "^1.83.0",
+    "publint": "^0.3.24",
+    "vitest": "^5.0.1"
+  },
+  "engines": {
+    "node": ">= 22.5"
+  },
+  "packageManager": "pnpm@11.22.0"
+}
