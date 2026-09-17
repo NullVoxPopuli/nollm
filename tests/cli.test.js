@@ -52,8 +52,9 @@ describe("cli", () => {
         "src/index.js",
         "  what-comment  Comment narrates what the code does. Say why, or delete it",
         '    1:1  "// This function"',
-        "  diff-comment  Comment describes the change, not the code. Put it in the commit message",
-        '    3:6  "no longer"',
+        "  pr-comment  Comment is about the change, not the code. It belongs in the PR, not the file",
+        '    3:6   "no longer"',
+        '    3:29  "the refactor"',
       ].join("\n"),
     );
     expect(stdout).toContain('    3:14  "simply"');

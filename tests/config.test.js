@@ -57,6 +57,21 @@ describe("config", () => {
     expect("a todo".match(todo.pattern)).toEqual(["todo"]);
   });
 
+  test("accepts a rule under an old id", async () => {
+    const off = await withConfig('export default { rules: { "diff-comment": false } };\n');
+    const disabled = await loadConfig(off.path);
+    expect(disabled.rules.map((rule) => rule.id)).not.toContain("pr-comment");
+    await cleanup();
+
+    const renamed = await withConfig(
+      'export default { rules: { "diff-comment": { message: "Old name" } } };\n',
+    );
+    const config = await loadConfig(renamed.path);
+    const matching = config.rules.filter((rule) => /comment$/.test(rule.id));
+    expect(matching.map((rule) => rule.id)).toEqual(["pr-comment", "what-comment"]);
+    expect(matching[0].message).toBe("Old name");
+  });
+
   test("disables rules, adds rules, and adds words", async () => {
     const { path } = await withConfig(`export default {
       ignore: ["docs/**"],

@@ -25,6 +25,15 @@ describe("samples", () => {
     ]);
   });
 
+  test("catches a yaml comment that argues the change is safe", () => {
+    const source = `allowBuilds:
+  '@sentry-internal/node-cpu-profiler': false
+  # Was never built under pnpm 10 either (no onlyBuiltDependencies), and the
+  # production image lacks libcairo. Keeping it off = no behavior change.
+`;
+    expect(ids(check("pnpm-workspace.yaml", source))).toEqual(["pr-comment", "pr-comment"]);
+  });
+
   test("catches a one sentence chain of but, so, and or", () => {
     const source = `function render() {
       // Each document renders as its own island with its own program
