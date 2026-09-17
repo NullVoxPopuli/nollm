@@ -80,28 +80,28 @@ Files of other types, binary files, lockfiles, minified files, and files over 2 
 
 ## Rules
 
-| Rule                  | Catches                                                                 |
-| --------------------- | ----------------------------------------------------------------------- |
-| `banned-word`         | genuinely, load-bearing, crutch, spearheaded, fails loudly, and friends |
-| `em-dash`             | The em dash character                                                   |
-| `bold-list-item`      | List items like `- **Label:** plain text`                               |
-| `filler-word`         | simply, seamlessly, seamless, robust                                    |
-| `llm-vocabulary`      | delve, tapestry, crucial, game-changer, battle-tested, and more         |
-| `chat-opener`         | Lines that start with "Great question", "Certainly", "Let me", and more |
-| `chat-closer`         | "Hope this helps", "Let me know if", "Feel free to", and more           |
-| `ai-disclosure`       | "As an AI", "my training data", and more                                |
-| `contrast-cliche`     | "not just X, but Y" and "it's not X, it's Y"                            |
-| `rhetorical-question` | "Why? Because" and "The result?"                                        |
-| `emoji-list`          | List items that start with an emoji                                     |
-| `diff-comment`        | Comments about the change: "no longer", "as discussed", "Previously,"   |
-| `what-comment`        | Comments that narrate the code: "This function returns", "Loop over"    |
-| `quoted-error`        | Comments that quote an error message: `"Cannot read properties of..."`  |
-| `dramatic-verb`       | blows up, dies with, falls over, chokes on, and friends                 |
-| `parenthetical-aside` | Asides like `(and their compiled handles)`                              |
-| `long-sentence`       | A sentence over 30 words                                                |
-| `wall-of-text`        | A paragraph over 120 words or 7 sentences                               |
-| `uniform-paragraphs`  | Three or more paragraphs in a row of about the same length              |
-| `uniform-sentences`   | Four or more sentences of about the same length                         |
+| Rule                      | Catches                                                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `banned-word`             | genuinely, load-bearing, crutch, spearheaded, fails loudly, and friends                                            |
+| `em-dash`                 | The em dash character                                                                                              |
+| `bold-list-item`          | List items like `- **Label:** plain text`                                                                          |
+| `filler-word`             | simply, seamlessly, seamless, robust                                                                               |
+| `llm-vocabulary`          | delve, tapestry, crucial, game-changer, battle-tested, and more                                                    |
+| `chat-opener`             | Lines that start with "Great question", "Certainly", "Let me", and more                                            |
+| `chat-closer`             | "Hope this helps", "Let me know if", "Feel free to", and more                                                      |
+| `ai-disclosure`           | "As an AI", "my training data", and more                                                                           |
+| `contrast-cliche`         | "not just X, but Y" and "it's not X, it's Y"                                                                       |
+| `rhetorical-question`     | "Why? Because" and "The result?"                                                                                   |
+| `emoji-list`              | List items that start with an emoji                                                                                |
+| `no-short-term-relevance` | Comments that stop making sense once the change lands: "no longer", "no behavior change", "for now", "Previously," |
+| `what-comment`            | Comments that narrate the code: "This function returns", "Loop over"                                               |
+| `quoted-error`            | Comments that quote an error message: `"Cannot read properties of..."`                                             |
+| `dramatic-verb`           | blows up, dies with, falls over, chokes on, and friends                                                            |
+| `parenthetical-aside`     | Asides like `(and their compiled handles)`                                                                         |
+| `long-sentence`           | A sentence over 30 words                                                                                           |
+| `wall-of-text`            | A paragraph over 120 words or 7 sentences                                                                          |
+| `uniform-paragraphs`      | Three or more paragraphs in a row of about the same length                                                         |
+| `uniform-sentences`       | Four or more sentences of about the same length                                                                    |
 
 Run `nollm --list-rules` for the full list with the scope of each rule.
 

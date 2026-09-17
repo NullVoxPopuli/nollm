@@ -2,6 +2,8 @@ export type Scope = "prose" | "comments" | "text" | "everywhere";
 
 export interface PatternRule {
   id: string;
+  /** Old ids of this rule. A config may still refer to the rule by one of them. */
+  aliases?: string[];
   message: string;
   pattern: RegExp;
   scope?: Scope;
@@ -15,6 +17,8 @@ export interface ShapeFinding {
 
 export interface CheckRule {
   id: string;
+  /** Old ids of this rule. A config may still refer to the rule by one of them. */
+  aliases?: string[];
   message: string;
   check: (segments: Segment[], scope: Scope) => ShapeFinding[];
   scope?: Scope;

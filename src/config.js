@@ -62,7 +62,7 @@ function resolveRules(overrides = {}, words = []) {
 
   for (let i = 0; i < builtinRules.length; i++) {
     const rule = builtinRules[i];
-    const override = overrides[rule.id];
+    const override = overrideFor(overrides, rule);
     if (override === false) continue;
     rules.push(isObject(override) ? customRule(rule.id, override, rule) : rule);
   }
@@ -70,7 +70,7 @@ function resolveRules(overrides = {}, words = []) {
   for (const id in overrides) {
     const override = overrides[id];
     if (!isObject(override)) continue;
-    if (builtinRules.some((rule) => rule.id === id)) continue;
+    if (builtinRules.some((rule) => namesOf(rule).includes(id))) continue;
     rules.push(customRule(id, override));
   }
 
@@ -84,6 +84,18 @@ function resolveRules(overrides = {}, words = []) {
   }
 
   return rules;
+}
+
+/**
+ * The config entry for a built in rule, under its id or one of its old ids.
+ */
+function overrideFor(overrides, rule) {
+  const name = namesOf(rule).find((candidate) => candidate in overrides);
+  return name === undefined ? undefined : overrides[name];
+}
+
+function namesOf(rule) {
+  return [rule.id].concat(rule.aliases ?? []);
 }
 
 /**
