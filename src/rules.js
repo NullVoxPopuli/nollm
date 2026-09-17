@@ -527,9 +527,9 @@ export const rules = [
     scope: "prose",
   },
   {
-    id: "pr-comment",
+    id: "no-short-term-relevance",
     aliases: ["diff-comment"],
-    message: "Comment is about the change, not the code. It belongs in the PR, not the file",
+    message: "Comment only makes sense while the change is under review. Say it in the PR",
     pattern: new RegExp(
       String.raw`\b(?:${words(PR_TALK)})\b|${SENTENCE_START}(?:${words(PR_OPENERS)})\b`,
       "gmi",

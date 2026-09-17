@@ -1,9 +1,12 @@
 import { describe, expect, test } from "vitest";
 import { comment, ids, prose, texts } from "../helpers.js";
 
-describe("pr-comment", () => {
+describe("no-short-term-relevance", () => {
   test("flags comments that describe the change", () => {
-    expect(ids(comment("no longer needed, as discussed"))).toEqual(["pr-comment", "pr-comment"]);
+    expect(ids(comment("no longer needed, as discussed"))).toEqual([
+      "no-short-term-relevance",
+      "no-short-term-relevance",
+    ]);
   });
 
   test("flags comments that argue the change is safe", () => {
@@ -15,38 +18,49 @@ describe("pr-comment", () => {
       "Same as before",
       "moved to",
     ]);
-    expect(ids(comment("This preserves existing behaviour for callers"))).toEqual(["pr-comment"]);
+    expect(ids(comment("This preserves existing behaviour for callers"))).toEqual([
+      "no-short-term-relevance",
+    ]);
   });
 
   test("flags comments about how the code used to fail", () => {
     expect(ids(comment("This test was failing on the main branch"))).toEqual([
-      "pr-comment",
-      "pr-comment",
+      "no-short-term-relevance",
+      "no-short-term-relevance",
     ]);
-    expect(ids(comment("never worked with node 22"))).toEqual(["pr-comment"]);
+    expect(ids(comment("never worked with node 22"))).toEqual(["no-short-term-relevance"]);
   });
 
   test("flags scope and follow-up talk", () => {
     expect(ids(comment("disabled for now, will be removed in a follow-up"))).toEqual([
-      "pr-comment",
-      "pr-comment",
-      "pr-comment",
+      "no-short-term-relevance",
+      "no-short-term-relevance",
+      "no-short-term-relevance",
     ]);
-    expect(ids(comment("out of scope for this PR"))).toEqual(["pr-comment", "pr-comment"]);
-    expect(ids(comment("quick fix until the upstream release"))).toEqual(["pr-comment"]);
+    expect(ids(comment("out of scope for this PR"))).toEqual([
+      "no-short-term-relevance",
+      "no-short-term-relevance",
+    ]);
+    expect(ids(comment("quick fix until the upstream release"))).toEqual([
+      "no-short-term-relevance",
+    ]);
   });
 
   test("flags the author narrating their own process", () => {
-    expect(ids(comment("I tested this locally against staging"))).toEqual(["pr-comment"]);
-    expect(ids(comment("not sure if this is still needed"))).toEqual(["pr-comment"]);
-    expect(ids(comment("Note for reviewers: the order matters here"))).toEqual(["pr-comment"]);
+    expect(ids(comment("I tested this locally against staging"))).toEqual([
+      "no-short-term-relevance",
+    ]);
+    expect(ids(comment("not sure if this is still needed"))).toEqual(["no-short-term-relevance"]);
+    expect(ids(comment("Note for reviewers: the order matters here"))).toEqual([
+      "no-short-term-relevance",
+    ]);
   });
 
   test("flags previously, formerly, and originally at the start of a sentence", () => {
-    expect(ids(comment("Previously this returned null"))).toEqual(["pr-comment"]);
-    expect(ids(comment("Fast path. Formerly the slow one"))).toEqual(["pr-comment"]);
+    expect(ids(comment("Previously this returned null"))).toEqual(["no-short-term-relevance"]);
+    expect(ids(comment("Fast path. Formerly the slow one"))).toEqual(["no-short-term-relevance"]);
     expect(ids(comment("Originally a class, but hooks made it a function"))).toEqual([
-      "pr-comment",
+      "no-short-term-relevance",
     ]);
   });
 

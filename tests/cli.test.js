@@ -52,7 +52,7 @@ describe("cli", () => {
         "src/index.js",
         "  what-comment  Comment narrates what the code does. Say why, or delete it",
         '    1:1  "// This function"',
-        "  pr-comment  Comment is about the change, not the code. It belongs in the PR, not the file",
+        "  no-short-term-relevance  Comment only makes sense while the change is under review. Say it in the PR",
         '    3:6   "no longer"',
         '    3:29  "the refactor"',
       ].join("\n"),

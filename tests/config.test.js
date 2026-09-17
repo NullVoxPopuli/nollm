@@ -60,16 +60,19 @@ describe("config", () => {
   test("accepts a rule under an old id", async () => {
     const off = await withConfig('export default { rules: { "diff-comment": false } };\n');
     const disabled = await loadConfig(off.path);
-    expect(disabled.rules.map((rule) => rule.id)).not.toContain("pr-comment");
+    expect(disabled.rules.map((rule) => rule.id)).not.toContain("no-short-term-relevance");
     await cleanup();
 
     const renamed = await withConfig(
       'export default { rules: { "diff-comment": { message: "Old name" } } };\n',
     );
     const config = await loadConfig(renamed.path);
-    const matching = config.rules.filter((rule) => /comment$/.test(rule.id));
-    expect(matching.map((rule) => rule.id)).toEqual(["pr-comment", "what-comment"]);
-    expect(matching[0].message).toBe("Old name");
+    const ids = config.rules.map((rule) => rule.id);
+    expect(ids).toContain("no-short-term-relevance");
+    expect(ids).not.toContain("diff-comment");
+    expect(config.rules.find((rule) => rule.id === "no-short-term-relevance").message).toBe(
+      "Old name",
+    );
   });
 
   test("disables rules, adds rules, and adds words", async () => {

@@ -31,7 +31,10 @@ describe("samples", () => {
   # Was never built under pnpm 10 either (no onlyBuiltDependencies), and the
   # production image lacks libcairo. Keeping it off = no behavior change.
 `;
-    expect(ids(check("pnpm-workspace.yaml", source))).toEqual(["pr-comment", "pr-comment"]);
+    expect(ids(check("pnpm-workspace.yaml", source))).toEqual([
+      "no-short-term-relevance",
+      "no-short-term-relevance",
+    ]);
   });
 
   test("catches a one sentence chain of but, so, and or", () => {

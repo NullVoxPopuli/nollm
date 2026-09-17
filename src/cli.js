@@ -61,7 +61,7 @@ export async function main(
   if (values["list-rules"]) {
     for (let i = 0; i < rules.length; i++) {
       const scope = (rules[i].scope ?? "text").padEnd(10);
-      stdout.write(`${rules[i].id.padEnd(20)} ${scope} ${rules[i].message}\n`);
+      stdout.write(`${rules[i].id.padEnd(24)} ${scope} ${rules[i].message}\n`);
     }
     return 0;
   }
