@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { cp, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -15,6 +16,27 @@ export async function copyFixture(name) {
   const dir = await mkdtemp(join(tmpdir(), "nollm-"));
   await cp(join(fixtures, name), dir, { recursive: true });
   return { dir, cleanup: () => rm(dir, { recursive: true, force: true }) };
+}
+
+/**
+ * Copies a fixture project, commits it on a branch named main,
+ * and checks out a branch named feature.
+ *
+ * Whatever the caller writes next is the diff that --diff main reports.
+ */
+export async function copyFixtureRepo(name) {
+  const copy = await copyFixture(name);
+  git(copy.dir, "init", "-q", "-b", "main");
+  git(copy.dir, "config", "user.email", "test@example.com");
+  git(copy.dir, "config", "user.name", "Test");
+  git(copy.dir, "add", "-A");
+  git(copy.dir, "commit", "-qm", "base");
+  git(copy.dir, "checkout", "-q", "-b", "feature");
+  return copy;
+}
+
+export function git(cwd, ...args) {
+  return execFileSync("git", args, { cwd, encoding: "utf8" });
 }
 
 /**

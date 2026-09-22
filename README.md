@@ -45,6 +45,7 @@ Paths can be files or directories.
 | ----------------- | ------------------------------------------------------------------ |
 | `--jobs <n>`      | Number of worker threads. Defaults to the CPU count.               |
 | `--config <path>` | Config file to use.                                                |
+| `--diff <ref>`    | Check only the lines this branch adds or changes since `<ref>`.    |
 | `--no-git`        | Do not ask git for the file list. Read `.gitignore` files instead. |
 | `--quiet`         | Print only the summary.                                            |
 | `--list-rules`    | Print every rule and exit.                                         |
@@ -66,6 +67,33 @@ src/index.js
     1:1  "// This function"
 
 4 problems in 2 files (5 files checked, 0.07s)
+```
+
+## Checking only a pull request
+
+A large codebase written before you added `nollm` has findings everywhere.
+`--diff` reports only the lines the current branch touches, so a pull request
+is judged on what it adds:
+
+```
+nollm --diff origin/main
+```
+
+The comparison starts at the merge base, the same range the pull request shows.
+Commits that landed on `origin/main` after you branched do not count as yours.
+Uncommitted edits and new files count, so the command works before you push.
+
+A finding is kept by the line it points at.
+A rule that reports at the top of a block, such as `wall-of-text`, stays quiet
+when the branch grows a paragraph further down.
+
+In GitHub Actions, fetch the base branch first:
+
+```yaml
+- uses: actions/checkout@v4
+  with:
+    fetch-depth: 0
+- run: npx nollm --diff origin/${{ github.base_ref }}
 ```
 
 ## What gets checked
@@ -175,6 +203,7 @@ const findings = check("README.md", "This is simply the best.");
 
 const summary = await lint({
   roots: ["src", "docs"],
+  diff: "origin/main",
   onResult({ file, findings }) {
     // runs once per file, as soon as it is done
   },

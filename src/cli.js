@@ -11,6 +11,7 @@ Files that git ignores are skipped.
 Options:
   --jobs, -j <n>     Number of worker threads (default: cpu count)
   --config <path>    Config file (default: nollm.config.js in the current directory)
+  --diff <ref>       Check only the lines this branch adds or changes since <ref>
   --no-git           Do not ask git for the file list. Read .gitignore files instead
   --quiet, -q        Print only the summary
   --list-rules       Print every rule and exit
@@ -33,6 +34,7 @@ export async function main(
       options: {
         jobs: { type: "string", short: "j" },
         config: { type: "string" },
+        diff: { type: "string" },
         git: { type: "boolean", default: true },
         quiet: { type: "boolean", short: "q", default: false },
         "list-rules": { type: "boolean", default: false },
@@ -85,6 +87,7 @@ export async function main(
       cwd,
       configPath: values.config,
       git: values.git,
+      diff: values.diff,
       jobs,
       onResult(result) {
         if (values.quiet || result.findings.length === 0) return;

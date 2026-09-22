@@ -1,4 +1,5 @@
 export { check } from "./check.js";
+export { ALL_LINES, changedLines } from "./diff.js";
 export { classify } from "./languages.js";
 export { collectFiles } from "./files.js";
 export { extractComments, extractLines } from "./comments.js";

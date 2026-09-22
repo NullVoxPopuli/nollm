@@ -1,9 +1,9 @@
 import { execFile } from "node:child_process";
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, test } from "vitest";
-import { bin, copyFixture } from "./helpers.js";
+import { bin, copyFixture, copyFixtureRepo } from "./helpers.js";
 
 const run = promisify(execFile);
 let cleanup = async () => {};
@@ -28,6 +28,17 @@ async function project() {
   const copy = await copyFixture("project");
   cleanup = copy.cleanup;
   return copy.dir;
+}
+
+async function repo() {
+  const copy = await copyFixtureRepo("project");
+  cleanup = copy.cleanup;
+  return copy.dir;
+}
+
+/** Takes the elapsed time out of the summary so output can be snapshotted. */
+function stable(stdout) {
+  return stdout.replace(/, [\d.]+s\)/, ", Xs)");
 }
 
 describe("cli", () => {
@@ -83,6 +94,69 @@ describe("cli", () => {
     expect(stdout).toContain("src/math.py");
   });
 
+  test("--diff reports only the lines the branch touched", async () => {
+    const dir = await repo();
+
+    // Line 3 of README.md already has findings. Edit line 9 and leave it alone.
+    const readme = await readFile(join(dir, "README.md"), "utf8");
+    await writeFile(join(dir, "README.md"), readme.replace("Hope this helps!", "Let me know if"));
+
+    const { code, stdout } = await nollm(["--diff", "main"], dir);
+    expect(code).toBe(1);
+    expect(stable(stdout)).toMatchInlineSnapshot(`
+      "README.md
+        chat-opener  Chat opener. Start with the answer
+          9:1  "Let me"
+        chat-closer  Chat closer. Stop when the content stops
+          9:1  "Let me know if"
+
+      2 problems in 1 file (1 files checked, Xs)
+      "
+    `);
+  });
+
+  test("--diff exits with 0 when the branch adds nothing to report", async () => {
+    const dir = await repo();
+    await writeFile(join(dir, "docs", "notes.txt"), "Plain notes.\n\nStill nothing.\n");
+
+    const { code, stdout } = await nollm(["--diff", "main"], dir);
+    expect(code).toBe(0);
+    expect(stable(stdout)).toMatchInlineSnapshot(`
+      "0 problems in 0 files (1 files checked, Xs)
+      "
+    `);
+  });
+
+  test("--diff narrows to the given paths", async () => {
+    const dir = await repo();
+    await writeFile(join(dir, "docs", "notes.txt"), "Plain notes.\n\nDelve into it.\n");
+    await writeFile(join(dir, "src", "math.py"), "# Delve into it\n");
+
+    const { stdout } = await nollm(["--diff", "main", "docs"], dir);
+    expect(stable(stdout)).toMatchInlineSnapshot(`
+      "docs/notes.txt
+        llm-vocabulary  LLM vocabulary
+          3:1  "Delve"
+
+      1 problem in 1 file (1 files checked, Xs)
+      "
+    `);
+  });
+
+  test("--diff rejects an unknown ref", async () => {
+    const dir = await repo();
+    const { code, stderr } = await nollm(["--diff", "no-such-branch"], dir);
+    expect(code).toBe(2);
+    expect(stderr).toContain('Could not diff against "no-such-branch"');
+  });
+
+  test("--diff outside a git repository is a usage error", async () => {
+    const dir = await project();
+    const { code, stderr } = await nollm(["--diff", "main"], dir);
+    expect(code).toBe(2);
+    expect(stderr).toContain('Could not diff against "main"');
+  });
+
   test("respects the config file", async () => {
     const dir = await project();
     await writeFile(
@@ -110,6 +184,11 @@ describe("cli", () => {
     const dir = await project();
     const { stdout } = await nollm(["--no-git", "--quiet"], dir);
     expect(stdout.trim().split("\n")).toHaveLength(1);
+  });
+
+  test("--help lists --diff", async () => {
+    const { stdout } = await nollm(["--help"], process.cwd());
+    expect(stdout).toContain("--diff <ref>");
   });
 
   test("--list-rules prints every rule", async () => {
