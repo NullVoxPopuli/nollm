@@ -1,5 +1,23 @@
 # Changelog
 
+## Release (2026-09-22)
+
+* nollm 0.3.0 (minor)
+
+#### :rocket: Enhancement
+* `nollm`
+  * [#10](https://github.com/NullVoxPopuli/nollm/pull/10) [Breaking] Require Node 24 and use what it gives us ([@NullVoxPopuli](https://github.com/NullVoxPopuli))
+  * [#7](https://github.com/NullVoxPopuli/nollm/pull/7) Add --diff to check only what a branch changes ([@NullVoxPopuli](https://github.com/NullVoxPopuli))
+
+#### :bug: Bug Fix
+* `nollm`
+  * [#12](https://github.com/NullVoxPopuli/nollm/pull/12) Read the diff in the repository the paths point at ([@NullVoxPopuli](https://github.com/NullVoxPopuli))
+  * [#11](https://github.com/NullVoxPopuli/nollm/pull/11) Say what to do when --diff cannot use the base ref ([@NullVoxPopuli](https://github.com/NullVoxPopuli))
+  * [#9](https://github.com/NullVoxPopuli/nollm/pull/9) Take absolute paths, and show both forms in the help ([@NullVoxPopuli](https://github.com/NullVoxPopuli))
+
+#### Committers: 1
+- [@NullVoxPopuli](https://github.com/NullVoxPopuli)
+
 ## Release (2026-09-17)
 
 * nollm 0.2.0 (minor)
