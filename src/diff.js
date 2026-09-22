@@ -1,7 +1,20 @@
 import { execFile } from "node:child_process";
+import { realpath, stat } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 
 const run = promisify(execFile);
+
+/**
+ * The checkout hint, for the one audience it helps.
+ *
+ * GitHub Actions checks out one branch at depth 1, which is what breaks
+ * --diff there. Anyone else gets the fetch line above it and no noise.
+ */
+function checkoutHint() {
+  if (process.env.GITHUB_ACTIONS !== "true") return [];
+  return ["In GitHub Actions, set fetch-depth: 0 on actions/checkout."];
+}
 
 /** Stands for every line of a file, used for files that are new in full. */
 export const ALL_LINES = true;
@@ -20,8 +33,45 @@ export const ALL_LINES = true;
  *
  * Files with no added or changed lines are left out. So are deleted files.
  */
-export async function changedLines(base, { cwd = process.cwd() } = {}) {
-  await checkBase(base, cwd);
+export async function changedLines(base, { cwd = process.cwd(), roots = ["."] } = {}) {
+  const changed = new Map();
+  for (const top of await repositories(roots, cwd)) {
+    for (const [file, lines] of await changedIn(base, top)) changed.set(file, lines);
+  }
+  return changed;
+}
+
+/**
+ * The repositories the roots live in, one entry each.
+ *
+ * A root names where to look, so that is where git is asked. Running nollm
+ * from one directory against another used to diff the directory it was run
+ * from, which is not the one holding the files.
+ */
+async function repositories(roots, cwd) {
+  const tops = new Set();
+  const seen = new Set();
+
+  for (let i = 0; i < roots.length; i++) {
+    const absolute = resolve(cwd, roots[i]);
+    const dir = (await isDirectory(absolute)) ? absolute : dirname(absolute);
+    if (seen.has(dir)) continue;
+    seen.add(dir);
+
+    await checkBase(dir);
+    tops.add(await real(await topLevel(dir)));
+  }
+  return tops;
+}
+
+/**
+ * The lines one repository changed, keyed by absolute path.
+ *
+ * Paths are absolute because the caller labels files against its own
+ * directory, which is not always this repository.
+ */
+async function changedIn(base, top) {
+  await checkRef(base, top);
 
   const args = [
     "diff",
@@ -29,7 +79,6 @@ export async function changedLines(base, { cwd = process.cwd() } = {}) {
     "--no-ext-diff",
     "--no-renames",
     "--no-prefix",
-    "--relative",
     "--unified=0",
     "--diff-filter=ACM",
     "--merge-base",
@@ -38,16 +87,38 @@ export async function changedLines(base, { cwd = process.cwd() } = {}) {
 
   let stdout;
   try {
-    ({ stdout } = await run("git", args, { cwd, maxBuffer: 256 * 1024 * 1024 }));
+    ({ stdout } = await run("git", args, { cwd: top, maxBuffer: 256 * 1024 * 1024 }));
   } catch (error) {
     const reason = firstLine(error.stderr) ?? error.message;
-    if (reason.includes("no merge base")) throw await noMergeBase(base, cwd);
-    throw new Error(`Could not diff against "${base}": ${reason}`);
+    if (reason.includes("no merge base")) throw await noMergeBase(base, top);
+    throw new Error(`Could not diff against "${base}" in ${top}: ${reason}`);
   }
 
-  const changed = parse(stdout);
-  for (const file of await untracked(cwd)) changed.set(file, ALL_LINES);
+  const changed = new Map();
+  for (const [file, lines] of parse(stdout)) changed.set(resolve(top, file), lines);
+  for (const file of await untracked(top)) changed.set(resolve(top, file), ALL_LINES);
   return changed;
+}
+
+async function topLevel(dir) {
+  return (await tryGit(["rev-parse", "--show-toplevel"], dir))?.trim() ?? dir;
+}
+
+async function isDirectory(path) {
+  try {
+    return (await stat(path)).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/** The path with its symlinks followed, so it matches how files are labelled. */
+async function real(path) {
+  try {
+    return await realpath(path);
+  } catch {
+    return path;
+  }
 }
 
 /**
@@ -57,18 +128,20 @@ export async function changedLines(base, { cwd = process.cwd() } = {}) {
  * usual reason a ref is missing. CI does both by default, so the ref a pull
  * request is against is often the one that is not there.
  */
-async function checkBase(base, cwd) {
-  if ((await tryGit(["rev-parse", "--is-inside-work-tree"], cwd)) === null) {
-    throw new Error(`Not a git repository, so there is nothing to compare "${base}" against.`);
+async function checkBase(dir) {
+  if ((await tryGit(["rev-parse", "--is-inside-work-tree"], dir)) === null) {
+    throw new Error(`Not a git repository, so --diff has nothing to compare: ${dir}`);
   }
+}
 
-  if ((await tryGit(["rev-parse", "--verify", "-q", `${base}^{commit}`], cwd)) !== null) return;
+async function checkRef(base, dir) {
+  if ((await tryGit(["rev-parse", "--verify", "-q", `${base}^{commit}`], dir)) !== null) return;
 
   throw new Error(
     [
-      `Could not find "${base}".`,
-      `Fetch it with: git fetch ${await fetchArgs(base, cwd)}`,
-      "In GitHub Actions, set fetch-depth: 0 on actions/checkout.",
+      `Could not find "${base}" in ${dir}.`,
+      `Fetch it with: git -C ${dir} fetch ${await fetchArgs(base, dir)}`,
+      ...checkoutHint(),
     ].join("\n"),
   );
 }
@@ -76,16 +149,16 @@ async function checkBase(base, cwd) {
 /**
  * The error for a ref that exists but shares no history with the branch.
  */
-async function noMergeBase(base, cwd) {
-  const shallow = (await tryGit(["rev-parse", "--is-shallow-repository"], cwd))?.trim() === "true";
+async function noMergeBase(base, dir) {
+  const shallow = (await tryGit(["rev-parse", "--is-shallow-repository"], dir))?.trim() === "true";
   if (!shallow) {
-    return new Error(`"${base}" and the current branch share no history, so there is no diff.`);
+    return new Error(`"${base}" and the branch in ${dir} share no history, so there is no diff.`);
   }
   return new Error(
     [
-      `No merge base with "${base}". This clone is shallow, so the shared commit is missing.`,
-      "Deepen it with: git fetch --unshallow",
-      "In GitHub Actions, set fetch-depth: 0 on actions/checkout.",
+      `No merge base with "${base}" in ${dir}. This clone is shallow, so the shared commit is missing.`,
+      `Deepen it with: git -C ${dir} fetch --unshallow`,
+      ...checkoutHint(),
     ].join("\n"),
   );
 }

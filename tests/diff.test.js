@@ -1,6 +1,6 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
 import { ALL_LINES, changedLines } from "../src/index.js";
 import { copyFixtureRepo, git } from "./helpers.js";
@@ -14,7 +14,7 @@ afterEach(async () => {
 async function repo() {
   const copy = await copyFixtureRepo("project");
   cleanups.push(copy.cleanup);
-  return copy.dir;
+  return realpath(copy.dir);
 }
 
 /** A depth 1 clone of a repository, the shape a CI checkout has by default. */
@@ -32,11 +32,11 @@ async function shallowCloneOf(source) {
  * The whole result as one block, so a snapshot shows which files are in it
  * and which are not.
  */
-function report(changed) {
+function report(changed, dir) {
   const rows = [];
   for (const [file, lines] of changed) {
     const where = lines === ALL_LINES ? "all" : [...lines].sort((a, b) => a - b).join(" ");
-    rows.push(`${file}: ${where}`);
+    rows.push(`${relative(dir, file)}: ${where}`);
   }
   return rows.sort().join("\n");
 }
@@ -47,7 +47,7 @@ describe("changedLines", () => {
     await writeFile(join(dir, "docs", "notes.txt"), "Plain notes.\n\nSimply the best.\n");
     git(dir, "commit", "-qam", "edit");
 
-    expect(report(await changedLines("main", { cwd: dir }))).toMatchInlineSnapshot(
+    expect(report(await changedLines("main", { cwd: dir }), dir)).toMatchInlineSnapshot(
       `"docs/notes.txt: 3"`,
     );
   });
@@ -56,7 +56,7 @@ describe("changedLines", () => {
     const dir = await repo();
     await writeFile(join(dir, "docs", "notes.txt"), "Plain notes.\n\nSimply the best.\n");
 
-    expect(report(await changedLines("main", { cwd: dir }))).toMatchInlineSnapshot(
+    expect(report(await changedLines("main", { cwd: dir }), dir)).toMatchInlineSnapshot(
       `"docs/notes.txt: 3"`,
     );
   });
@@ -71,7 +71,7 @@ describe("changedLines", () => {
         .replace("Hope this helps!", "Let me know if"),
     );
 
-    expect(report(await changedLines("main", { cwd: dir }))).toMatchInlineSnapshot(
+    expect(report(await changedLines("main", { cwd: dir }), dir)).toMatchInlineSnapshot(
       `"README.md: 3 4 10"`,
     );
   });
@@ -82,7 +82,7 @@ describe("changedLines", () => {
     git(dir, "add", "-A");
     git(dir, "commit", "-qm", "add guide");
 
-    expect(report(await changedLines("main", { cwd: dir }))).toMatchInlineSnapshot(
+    expect(report(await changedLines("main", { cwd: dir }), dir)).toMatchInlineSnapshot(
       `"docs/guide.md: 1 2 3"`,
     );
   });
@@ -91,7 +91,7 @@ describe("changedLines", () => {
     const dir = await repo();
     await writeFile(join(dir, "docs", "guide.md"), "# Guide\n\nDelve into it.\n");
 
-    expect(report(await changedLines("main", { cwd: dir }))).toMatchInlineSnapshot(
+    expect(report(await changedLines("main", { cwd: dir }), dir)).toMatchInlineSnapshot(
       `"docs/guide.md: all"`,
     );
   });
@@ -100,14 +100,14 @@ describe("changedLines", () => {
     const dir = await repo();
     await writeFile(join(dir, "docs", "notes.txt"), "Plain notes.\n");
 
-    expect(report(await changedLines("main", { cwd: dir }))).toMatchInlineSnapshot(`""`);
+    expect(report(await changedLines("main", { cwd: dir }), dir)).toMatchInlineSnapshot(`""`);
   });
 
   test("leaves out deleted files", async () => {
     const dir = await repo();
     await rm(join(dir, "docs", "notes.txt"));
 
-    expect(report(await changedLines("main", { cwd: dir }))).toMatchInlineSnapshot(`""`);
+    expect(report(await changedLines("main", { cwd: dir }), dir)).toMatchInlineSnapshot(`""`);
   });
 
   test("diffs from the merge base, not the tip of the base branch", async () => {
@@ -122,31 +122,49 @@ describe("changedLines", () => {
     git(dir, "commit", "-qm", "moved on");
     git(dir, "checkout", "-q", "feature");
 
-    expect(report(await changedLines("main", { cwd: dir }))).toMatchInlineSnapshot(
+    expect(report(await changedLines("main", { cwd: dir }), dir)).toMatchInlineSnapshot(
       `"docs/notes.txt: 3"`,
     );
   });
 
-  test("resolves paths against cwd", async () => {
+  test("reports the same absolute paths from any directory", async () => {
     const dir = await repo();
     await writeFile(join(dir, "docs", "notes.txt"), "Plain notes.\n\nSimply the best.\n");
     await writeFile(join(dir, "README.md"), "# Sample\n\nDelve into it.\n");
 
-    expect(report(await changedLines("main", { cwd: join(dir, "docs") }))).toMatchInlineSnapshot(
-      `"notes.txt: 3"`,
-    );
+    const fromRoot = await changedLines("main", { cwd: dir });
+    const fromSubdir = await changedLines("main", { cwd: join(dir, "docs") });
+
+    expect(report(fromRoot, dir)).toMatchInlineSnapshot(`
+      "README.md: 3
+      docs/notes.txt: 3"
+    `);
+    expect(report(fromSubdir, dir)).toEqual(report(fromRoot, dir));
+  });
+
+  test("diffs the repository a root lives in, not the one it was called from", async () => {
+    const dir = await repo();
+    await writeFile(join(dir, "docs", "notes.txt"), "Plain notes.\n\nSimply the best.\n");
+
+    // A caller sitting somewhere else entirely, pointing at the repository.
+    const elsewhere = await realpath(await mkdtemp(join(tmpdir(), "nollm-away-")));
+    cleanups.push(() => rm(elsewhere, { recursive: true, force: true }));
+
+    const changed = await changedLines("main", { cwd: elsewhere, roots: [dir] });
+    expect(report(changed, dir)).toMatchInlineSnapshot(`"docs/notes.txt: 3"`);
   });
 
   test("says how to fetch a ref that is not here", async () => {
     const dir = await repo();
     git(dir, "remote", "add", "origin", "https://example.com/repo.git");
 
-    await expect(changedLines("origin/develop", { cwd: dir })).rejects
-      .toThrowErrorMatchingInlineSnapshot(`
-        [Error: Could not find "origin/develop".
-        Fetch it with: git fetch origin develop
-        In GitHub Actions, set fetch-depth: 0 on actions/checkout.]
-      `);
+    const error = await changedLines("origin/develop", { cwd: dir }).catch((e) => e);
+    expect(error.message).toBe(
+      [
+        `Could not find "origin/develop" in ${dir}.`,
+        `Fetch it with: git -C ${dir} fetch origin develop`,
+      ].join("\n"),
+    );
   });
 
   test("keeps a slash in a branch name out of the fetch line", async () => {
@@ -156,7 +174,7 @@ describe("changedLines", () => {
     // The repository has remotes and none is called "release", so the whole
     // thing is a branch name.
     await expect(changedLines("release/1.0", { cwd: dir })).rejects.toThrow(
-      "git fetch origin release/1.0",
+      "fetch origin release/1.0",
     );
   });
 
@@ -166,7 +184,7 @@ describe("changedLines", () => {
     await rm(join(copy.dir, ".git"), { recursive: true, force: true });
 
     await expect(changedLines("main", { cwd: copy.dir })).rejects.toThrow(
-      'Not a git repository, so there is nothing to compare "main" against.',
+      "Not a git repository, so --diff has nothing to compare:",
     );
   });
 
@@ -179,7 +197,7 @@ describe("changedLines", () => {
     git(dir, "checkout", "-q", "feature");
 
     await expect(changedLines("lonely", { cwd: dir })).rejects.toThrow(
-      '"lonely" and the current branch share no history',
+      `"lonely" and the branch in ${dir} share no history`,
     );
   });
 
@@ -189,11 +207,8 @@ describe("changedLines", () => {
     git(source, "commit", "-qam", "work on the branch");
 
     const clone = await shallowCloneOf(source);
-    await expect(changedLines("origin/main", { cwd: clone })).rejects
-      .toThrowErrorMatchingInlineSnapshot(`
-        [Error: No merge base with "origin/main". This clone is shallow, so the shared commit is missing.
-        Deepen it with: git fetch --unshallow
-        In GitHub Actions, set fetch-depth: 0 on actions/checkout.]
-      `);
+    const error = await changedLines("origin/main", { cwd: clone }).catch((e) => e);
+    expect(error.message).toContain("This clone is shallow, so the shared commit is missing.");
+    expect(error.message).toContain("fetch --unshallow");
   });
 });
