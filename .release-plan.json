@@ -2,17 +2,21 @@
   "solution": {
     "nollm": {
       "impact": "minor",
-      "oldVersion": "0.1.0",
-      "newVersion": "0.2.0",
+      "oldVersion": "0.2.0",
+      "newVersion": "0.3.0",
       "tagName": "latest",
       "constraints": [
         {
           "impact": "minor",
           "reason": "Appears in changelog section :rocket: Enhancement"
+        },
+        {
+          "impact": "patch",
+          "reason": "Appears in changelog section :bug: Bug Fix"
         }
       ],
       "pkgJSONPath": "./package.json"
     }
   },
-  "description": "## Release (2026-09-17)\n\n* nollm 0.2.0 (minor)\n\n#### :rocket: Enhancement\n* `nollm`\n  * [#6](https://github.com/NullVoxPopuli/nollm/pull/6) Rename diff-comment to no-short-term-relevance and broaden it ([@NullVoxPopuli](https://github.com/NullVoxPopuli))\n\n#### Committers: 1\n- [@NullVoxPopuli](https://github.com/NullVoxPopuli)\n"
+  "description": "## Release (2026-09-22)\n\n* nollm 0.3.0 (minor)\n\n#### :rocket: Enhancement\n* `nollm`\n  * [#10](https://github.com/NullVoxPopuli/nollm/pull/10) [Breaking] Require Node 24 and use what it gives us ([@NullVoxPopuli](https://github.com/NullVoxPopuli))\n  * [#7](https://github.com/NullVoxPopuli/nollm/pull/7) Add --diff to check only what a branch changes ([@NullVoxPopuli](https://github.com/NullVoxPopuli))\n\n#### :bug: Bug Fix\n* `nollm`\n  * [#12](https://github.com/NullVoxPopuli/nollm/pull/12) Read the diff in the repository the paths point at ([@NullVoxPopuli](https://github.com/NullVoxPopuli))\n  * [#11](https://github.com/NullVoxPopuli/nollm/pull/11) Say what to do when --diff cannot use the base ref ([@NullVoxPopuli](https://github.com/NullVoxPopuli))\n  * [#9](https://github.com/NullVoxPopuli/nollm/pull/9) Take absolute paths, and show both forms in the help ([@NullVoxPopuli](https://github.com/NullVoxPopuli))\n\n#### Committers: 1\n- [@NullVoxPopuli](https://github.com/NullVoxPopuli)\n"
 }
