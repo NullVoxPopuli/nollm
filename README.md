@@ -98,6 +98,10 @@ A finding is kept by the line it points at.
 A rule that reports at the top of a block, such as `wall-of-text`, stays quiet
 when the branch grows a paragraph further down.
 
+The base ref has to be in the local clone. A shallow checkout, or one that
+fetched a single branch, does not have it, and `nollm` then names the command
+that fetches it.
+
 In GitHub Actions, fetch the base branch first:
 
 ```yaml

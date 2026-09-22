@@ -222,18 +222,25 @@ describe("cli", () => {
     `);
   });
 
-  test("--diff rejects an unknown ref", async () => {
+  test("--diff rejects an unknown ref and says how to fetch it", async () => {
     const dir = await repo();
-    const { code, stderr } = await nollm(["--diff", "no-such-branch"], dir);
+    const { code, stderr } = await nollm(["--diff", "origin/develop"], dir);
     expect(code).toBe(2);
-    expect(stderr).toContain('Could not diff against "no-such-branch"');
+    expect(stderr).toMatchInlineSnapshot(`
+      "Could not find "origin/develop".
+      Fetch it with: git fetch origin develop
+      In GitHub Actions, set fetch-depth: 0 on actions/checkout.
+      "
+    `);
   });
 
   test("--diff outside a git repository is a usage error", async () => {
     const dir = await project();
     const { code, stderr } = await nollm(["--diff", "main"], dir);
     expect(code).toBe(2);
-    expect(stderr).toContain('Could not diff against "main"');
+    expect(stderr).toContain(
+      'Not a git repository, so there is nothing to compare "main" against.',
+    );
   });
 
   test("respects the config file", async () => {
