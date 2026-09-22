@@ -30,6 +30,17 @@ async function project() {
   return copy.dir;
 }
 
+async function repo() {
+  const copy = await copyFixtureRepo("project");
+  cleanup = copy.cleanup;
+  return copy.dir;
+}
+
+/** Takes the elapsed time out of the summary so output can be snapshotted. */
+function stable(stdout) {
+  return stdout.replace(/, [\d.]+s\)/, ", Xs)");
+}
+
 describe("cli", () => {
   test("groups findings by file and rule and exits with 1", async () => {
     const dir = await project();
@@ -84,9 +95,7 @@ describe("cli", () => {
   });
 
   test("--diff reports only the lines the branch touched", async () => {
-    const copy = await copyFixtureRepo("project");
-    cleanup = copy.cleanup;
-    const dir = copy.dir;
+    const dir = await repo();
 
     // Line 3 of README.md already has findings. Edit line 9 and leave it alone.
     const readme = await readFile(join(dir, "README.md"), "utf8");
@@ -94,40 +103,49 @@ describe("cli", () => {
 
     const { code, stdout } = await nollm(["--diff", "main"], dir);
     expect(code).toBe(1);
-    expect(stdout).toContain("README.md");
-    expect(stdout).toContain('9:1  "Let me know if"');
-    expect(stdout).not.toContain("simply");
-    expect(stdout).not.toContain("src/index.js");
-    expect(stdout).toMatch(/2 problems in 1 file \(1 files checked, [\d.]+s\)\n$/);
+    expect(stable(stdout)).toMatchInlineSnapshot(`
+      "README.md
+        chat-opener  Chat opener. Start with the answer
+          9:1  "Let me"
+        chat-closer  Chat closer. Stop when the content stops
+          9:1  "Let me know if"
+
+      2 problems in 1 file (1 files checked, Xs)
+      "
+    `);
   });
 
   test("--diff exits with 0 when the branch adds nothing to report", async () => {
-    const copy = await copyFixtureRepo("project");
-    cleanup = copy.cleanup;
-    const dir = copy.dir;
+    const dir = await repo();
     await writeFile(join(dir, "docs", "notes.txt"), "Plain notes.\n\nStill nothing.\n");
 
     const { code, stdout } = await nollm(["--diff", "main"], dir);
     expect(code).toBe(0);
-    expect(stdout).toContain("0 problems in 0 files (1 files checked");
+    expect(stable(stdout)).toMatchInlineSnapshot(`
+      "0 problems in 0 files (1 files checked, Xs)
+      "
+    `);
   });
 
   test("--diff narrows to the given paths", async () => {
-    const copy = await copyFixtureRepo("project");
-    cleanup = copy.cleanup;
-    const dir = copy.dir;
+    const dir = await repo();
     await writeFile(join(dir, "docs", "notes.txt"), "Plain notes.\n\nDelve into it.\n");
     await writeFile(join(dir, "src", "math.py"), "# Delve into it\n");
 
     const { stdout } = await nollm(["--diff", "main", "docs"], dir);
-    expect(stdout).toContain("docs/notes.txt");
-    expect(stdout).not.toContain("src/math.py");
+    expect(stable(stdout)).toMatchInlineSnapshot(`
+      "docs/notes.txt
+        llm-vocabulary  LLM vocabulary
+          3:1  "Delve"
+
+      1 problem in 1 file (1 files checked, Xs)
+      "
+    `);
   });
 
   test("--diff rejects an unknown ref", async () => {
-    const copy = await copyFixtureRepo("project");
-    cleanup = copy.cleanup;
-    const { code, stderr } = await nollm(["--diff", "no-such-branch"], copy.dir);
+    const dir = await repo();
+    const { code, stderr } = await nollm(["--diff", "no-such-branch"], dir);
     expect(code).toBe(2);
     expect(stderr).toContain('Could not diff against "no-such-branch"');
   });
