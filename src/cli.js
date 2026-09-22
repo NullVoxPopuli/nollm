@@ -6,7 +6,7 @@ import { rules } from "./rules.js";
 const HELP = `Usage: nollm [options] [paths...]
 
 Checks files for LLMisms and prints each finding as soon as it is found.
-Files that git ignores are skipped.
+Paths may be relative or absolute. Files that git ignores are skipped.
 
 Options:
   --jobs, -j <n>     Number of worker threads (default: cpu count)
@@ -17,6 +17,10 @@ Options:
   --list-rules       Print every rule and exit
   --version, -v      Print the version and exit
   --help, -h         Print this help and exit
+
+Examples:
+  nollm docs/guide.md            a path relative to the current directory
+  nollm /srv/site/docs/guide.md  an absolute path
 
 Exit code 1 when there are findings. Exit code 2 on a usage error.
 `;

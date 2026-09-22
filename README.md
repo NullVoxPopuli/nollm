@@ -39,7 +39,18 @@ nollm [options] [paths...]
 ```
 
 With no paths, `nollm` checks the current directory.
-Paths can be files or directories.
+Paths can be files or directories, and they can be relative or absolute:
+
+```
+nollm docs/guide.md
+nollm /srv/site/docs/guide.md
+```
+
+A file under the current directory is reported by its relative path.
+A file outside it keeps its absolute path, so the report never points at it
+through a row of `..`.
+Ignore patterns from the config describe the project, so they apply under the
+current directory and leave paths outside it alone.
 
 | Option            | Effect                                                             |
 | ----------------- | ------------------------------------------------------------------ |

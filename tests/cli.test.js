@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, test } from "vitest";
@@ -7,9 +8,11 @@ import { bin, copyFixture, copyFixtureRepo } from "./helpers.js";
 
 const run = promisify(execFile);
 let cleanup = async () => {};
+const outside = [];
 
 afterEach(async () => {
   await cleanup();
+  while (outside.length > 0) await rm(outside.pop(), { recursive: true, force: true });
 });
 
 async function nollm(args, cwd) {
@@ -36,9 +39,26 @@ async function repo() {
   return copy.dir;
 }
 
-/** Takes the elapsed time out of the summary so output can be snapshotted. */
-function stable(stdout) {
-  return stdout.replace(/, [\d.]+s\)/, ", Xs)");
+/**
+ * A directory that is not under the project, with one file in it.
+ *
+ * The path is the real one, since that is how nollm reports it.
+ */
+async function elsewhere() {
+  const made = await mkdtemp(join(tmpdir(), "nollm-outside-"));
+  outside.push(made);
+  const dir = await realpath(made);
+  await writeFile(join(dir, "notes.md"), "# Notes\n\nThis is simply the best.\n");
+  return dir;
+}
+
+/**
+ * Takes the elapsed time out of the summary, and the temp directory out of
+ * absolute paths, so output can be snapshotted.
+ */
+function stable(stdout, dir = null) {
+  const timeless = stdout.replace(/, [\d.]+s\)/, ", Xs)");
+  return dir === null ? timeless : timeless.split(dir).join("<outside>");
 }
 
 describe("cli", () => {
@@ -92,6 +112,65 @@ describe("cli", () => {
     const { stdout } = await nollm(["--no-git", "src/math.py"], dir);
     expect(stdout).not.toContain("README.md");
     expect(stdout).toContain("src/math.py");
+  });
+
+  test("checks an absolute path under the current directory", async () => {
+    const dir = await project();
+    const { code, stdout } = await nollm(["--no-git", join(dir, "src", "math.py")], dir);
+    expect(code).toBe(1);
+    expect(stable(stdout)).toMatchInlineSnapshot(`
+      "src/math.py
+        filler-word  Filler. Delete it or replace it
+          2:8  "Simply"
+        llm-vocabulary  LLM vocabulary
+          2:39  "crucial"
+        what-comment  Comment narrates what the code does. Say why, or delete it
+          3:19  "# increment"
+
+      3 problems in 1 file (1 files checked, Xs)
+      "
+    `);
+  });
+
+  test("checks an absolute path outside the current directory", async () => {
+    const dir = await project();
+    const other = await elsewhere();
+    const { code, stdout } = await nollm(["--no-git", join(other, "notes.md")], dir);
+    expect(code).toBe(1);
+    expect(stable(stdout, other)).toMatchInlineSnapshot(`
+      "<outside>/notes.md
+        filler-word  Filler. Delete it or replace it
+          3:9  "simply"
+
+      1 problem in 1 file (1 files checked, Xs)
+      "
+    `);
+  });
+
+  test("checks an absolute directory outside the current directory", async () => {
+    const dir = await project();
+    const other = await elsewhere();
+    const { stdout } = await nollm(["--no-git", other], dir);
+    expect(stable(stdout, other)).toContain("<outside>/notes.md");
+  });
+
+  test("mixes a relative root with an absolute one outside", async () => {
+    const dir = await project();
+    const other = await elsewhere();
+    const { stdout } = await nollm(["--no-git", "src/math.py", join(other, "notes.md")], dir);
+    expect(stable(stdout, other)).toContain("src/math.py");
+    expect(stable(stdout, other)).toContain("<outside>/notes.md");
+    expect(stdout).toContain("2 files checked");
+  });
+
+  test("a config ignore glob does not reach outside the current directory", async () => {
+    const dir = await project();
+    const other = await elsewhere();
+    await writeFile(join(dir, ".nollmrc"), '{ "ignore": ["*.md"] }\n');
+
+    const { stdout } = await nollm(["--no-git", "README.md", join(other, "notes.md")], dir);
+    expect(stdout).not.toContain("README.md");
+    expect(stable(stdout, other)).toContain("<outside>/notes.md");
   });
 
   test("--diff reports only the lines the branch touched", async () => {
@@ -186,9 +265,32 @@ describe("cli", () => {
     expect(stdout.trim().split("\n")).toHaveLength(1);
   });
 
-  test("--help lists --diff", async () => {
-    const { stdout } = await nollm(["--help"], process.cwd());
-    expect(stdout).toContain("--diff <ref>");
+  test("--help shows the options and a relative and an absolute example", async () => {
+    const { code, stdout } = await nollm(["--help"], process.cwd());
+    expect(code).toBe(0);
+    expect(stdout).toMatchInlineSnapshot(`
+      "Usage: nollm [options] [paths...]
+
+      Checks files for LLMisms and prints each finding as soon as it is found.
+      Paths may be relative or absolute. Files that git ignores are skipped.
+
+      Options:
+        --jobs, -j <n>     Number of worker threads (default: cpu count)
+        --config <path>    Config file (default: nollm.config.js in the current directory)
+        --diff <ref>       Check only the lines this branch adds or changes since <ref>
+        --no-git           Do not ask git for the file list. Read .gitignore files instead
+        --quiet, -q        Print only the summary
+        --list-rules       Print every rule and exit
+        --version, -v      Print the version and exit
+        --help, -h         Print this help and exit
+
+      Examples:
+        nollm docs/guide.md            a path relative to the current directory
+        nollm /srv/site/docs/guide.md  an absolute path
+
+      Exit code 1 when there are findings. Exit code 2 on a usage error.
+      "
+    `);
   });
 
   test("--list-rules prints every rule", async () => {
