@@ -28,6 +28,23 @@ function escape(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * Three shapes of one move: naming the thing it is not.
+ *
+ *   not just X, but Y
+ *   it is not X, it is Y
+ *   X, not Y: the rest
+ *
+ * The third wants a label colon, so "a, not https://b" stays out. It also
+ * stays on one line, so a wrapped block comment cannot join two sentences
+ * into a match.
+ */
+const CONTRAST_CLICHES = [
+  String.raw`\bnot (?:just|only|merely|simply) [^.\n]{1,60}?,? but(?: also)?\b`,
+  String.raw`\bit'?s not (?:just |about )?[^.\n]{1,40}?[,;] it'?s\b`,
+  String.raw`[^\s,:][^,:\n]{0,29},[ \t]+not[ \t]+[^,:\n]{1,30}:(?=\s|$)`,
+];
+
 const BANNED_WORDS = [
   "genuinely",
   "fails loudly",
@@ -508,9 +525,8 @@ export const rules = [
   },
   {
     id: "contrast-cliche",
-    message: "Contrast cliche (not just X, but Y)",
-    pattern:
-      /\b(?:not (?:just|only|merely|simply) [^.\n]{1,60}?,? but(?: also)?\b|it'?s not (?:just |about )?[^.\n]{1,40}?[,;] it'?s\b)/gi,
+    message: "Contrast cliche. State the thing directly",
+    pattern: new RegExp(CONTRAST_CLICHES.join("|"), "gi"),
   },
   {
     id: "rhetorical-question",
