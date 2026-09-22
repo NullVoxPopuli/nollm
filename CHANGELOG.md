@@ -2,6 +2,21 @@
 
 ## Release (2026-09-22)
 
+* nollm 0.4.0 (minor)
+
+#### :rocket: Enhancement
+* `nollm`
+  * [#15](https://github.com/NullVoxPopuli/nollm/pull/15) Flag a line break that lands mid phrase ([@NullVoxPopuli](https://github.com/NullVoxPopuli))
+
+#### :bug: Bug Fix
+* `nollm`
+  * [#13](https://github.com/NullVoxPopuli/nollm/pull/13) Catch "X, not Y:" as a contrast cliche ([@NullVoxPopuli](https://github.com/NullVoxPopuli))
+
+#### Committers: 1
+- [@NullVoxPopuli](https://github.com/NullVoxPopuli)
+
+## Release (2026-09-22)
+
 * nollm 0.3.0 (minor)
 
 #### :rocket: Enhancement
