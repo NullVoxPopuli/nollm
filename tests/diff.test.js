@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { ALL_LINES, changedLines } from "../src/index.js";
 import { copyFixtureRepo, git } from "./helpers.js";
 
@@ -9,6 +9,7 @@ const cleanups = [];
 
 afterEach(async () => {
   while (cleanups.length > 0) await cleanups.pop()();
+  vi.unstubAllEnvs();
 });
 
 async function repo() {
@@ -155,6 +156,9 @@ describe("changedLines", () => {
   });
 
   test("says how to fetch a ref that is not here", async () => {
+    // These tests run in GitHub Actions themselves, so the variable that
+    // decides the last line has to be set on purpose either way.
+    vi.stubEnv("GITHUB_ACTIONS", "");
     const dir = await repo();
     git(dir, "remote", "add", "origin", "https://example.com/repo.git");
 
@@ -163,6 +167,21 @@ describe("changedLines", () => {
       [
         `Could not find "origin/develop" in ${dir}.`,
         `Fetch it with: git -C ${dir} fetch origin develop`,
+      ].join("\n"),
+    );
+  });
+
+  test("adds the checkout line when it runs in GitHub Actions", async () => {
+    vi.stubEnv("GITHUB_ACTIONS", "true");
+    const dir = await repo();
+    git(dir, "remote", "add", "origin", "https://example.com/repo.git");
+
+    const error = await changedLines("origin/develop", { cwd: dir }).catch((e) => e);
+    expect(error.message).toBe(
+      [
+        `Could not find "origin/develop" in ${dir}.`,
+        `Fetch it with: git -C ${dir} fetch origin develop`,
+        "In GitHub Actions, set fetch-depth: 0 on actions/checkout.",
       ].join("\n"),
     );
   });
