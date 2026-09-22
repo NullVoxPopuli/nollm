@@ -30,12 +30,13 @@ const EVERYTHING = ["**/*", "**/.*", "**/.*/**"];
  * git only knows about its own work tree, so roots outside cwd are always
  * walked.
  *
- * The ignore option takes patterns in .gitignore syntax. They describe the
- * project, so they apply under cwd and leave paths outside cwd alone.
+ * The ignore option takes patterns in .gitignore syntax.
+ * They describe the project, so they apply under cwd
+ * and leave paths outside cwd alone.
  *
- * Roots and cwd are compared after their symlinks are followed. On macOS a
- * temp directory is reached through /var and lives in /private/var, and
- * without this a path under cwd would look like a path outside it.
+ * Roots and cwd are compared after their symlinks are followed.
+ * On macOS a temp directory is reached through /var and lives in /private/var,
+ * so without this a path under cwd would look like a path outside it.
  */
 export async function collectFiles(
   roots,
@@ -113,11 +114,12 @@ async function fromWalk(roots, base) {
  * so an ignored tree is never opened.
  *
  * A .gitignore applies to the directory that holds it and to everything below.
- * So each entry is matched against the chain of files from the root down to
- * its own directory. Chains are built once per directory and kept.
+ * So each entry is matched against the chain of files
+ * from the root down to its own directory.
+ * Chains are built once per directory and kept.
  *
- * glob asks this question synchronously, so the reads are synchronous. It is
- * one small file per directory, which is what the walk read before.
+ * glob asks this question synchronously, so the reads are synchronous.
+ * It is one small file per directory, which is what the walk read before.
  */
 function skips(root) {
   const chains = new Map();

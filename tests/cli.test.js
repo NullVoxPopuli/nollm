@@ -53,8 +53,9 @@ async function elsewhere() {
 }
 
 /**
- * Takes the elapsed time out of the summary, and the temp directory out of
- * absolute paths, so output can be snapshotted.
+ * Takes the elapsed time out of the summary,
+ * and the temp directory out of absolute paths,
+ * so output can be snapshotted.
  */
 function stable(stdout, dir = null) {
   const timeless = stdout.replace(/, [\d.]+s\)/, ", Xs)");

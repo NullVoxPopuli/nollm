@@ -19,6 +19,7 @@ describe("samples", () => {
 `;
     expect(ids(check("render.js", source))).toEqual([
       "parenthetical-aside",
+      "mid-phrase-break",
       "long-sentence",
       "dramatic-verb",
       "quoted-error",
@@ -32,6 +33,7 @@ describe("samples", () => {
   # production image lacks libcairo. Keeping it off = no behavior change.
 `;
     expect(ids(check("pnpm-workspace.yaml", source))).toEqual([
+      "mid-phrase-break",
       "no-short-term-relevance",
       "no-short-term-relevance",
     ]);
@@ -49,7 +51,10 @@ describe("samples", () => {
     expect(ids(check("render.js", source))).toEqual([
       "long-sentence",
       "parenthetical-aside",
+      "mid-phrase-break",
+      "mid-phrase-break",
       "dramatic-verb",
+      "mid-phrase-break",
       "quoted-error",
     ]);
   });

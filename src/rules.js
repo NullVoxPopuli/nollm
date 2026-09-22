@@ -1,4 +1,10 @@
-import { longSentences, uniformParagraphs, uniformSentences, wallOfText } from "./shape.js";
+import {
+  longSentences,
+  midPhraseBreaks,
+  uniformParagraphs,
+  uniformSentences,
+  wallOfText,
+} from "./shape.js";
 
 /**
  * A rule is a regular expression plus a message,
@@ -577,6 +583,11 @@ export const rules = [
     message: "Comment narrates what the code does. Say why, or delete it",
     pattern: new RegExp(String.raw`${COMMENT_START}(?:${words(WHAT_COMMENT_STARTS)})\b`, "gmi"),
     scope: "comments",
+  },
+  {
+    id: "mid-phrase-break",
+    message: "Line break in the middle of a phrase. Break where there is a pause",
+    check: midPhraseBreaks,
   },
   {
     id: "long-sentence",

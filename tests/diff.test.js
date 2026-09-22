@@ -156,8 +156,8 @@ describe("changedLines", () => {
   });
 
   test("says how to fetch a ref that is not here", async () => {
-    // These tests run in GitHub Actions themselves, so the variable that
-    // decides the last line has to be set on purpose either way.
+    // These tests run in GitHub Actions themselves,
+    // so the variable deciding the last line has to be set on purpose either way.
     vi.stubEnv("GITHUB_ACTIONS", "");
     const dir = await repo();
     git(dir, "remote", "add", "origin", "https://example.com/repo.git");

@@ -144,6 +144,7 @@ Files of other types, binary files, lockfiles, minified files, and files over 2 
 | `quoted-error`            | Comments that quote an error message: `"Cannot read properties of..."`                                             |
 | `dramatic-verb`           | blows up, dies with, falls over, chokes on, and friends                                                            |
 | `parenthetical-aside`     | Asides like `(and their compiled handles)`                                                                         |
+| `mid-phrase-break`        | A line that stops mid phrase, on a word such as the, of, or that                                                   |
 | `long-sentence`           | A sentence over 30 words                                                                                           |
 | `wall-of-text`            | A paragraph over 120 words or 7 sentences                                                                          |
 | `uniform-paragraphs`      | Three or more paragraphs in a row of about the same length                                                         |
