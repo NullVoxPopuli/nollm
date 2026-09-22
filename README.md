@@ -136,7 +136,7 @@ Files of other types, binary files, lockfiles, minified files, and files over 2 
 | `chat-opener`             | Lines that start with "Great question", "Certainly", "Let me", and more                                            |
 | `chat-closer`             | "Hope this helps", "Let me know if", "Feel free to", and more                                                      |
 | `ai-disclosure`           | "As an AI", "my training data", and more                                                                           |
-| `contrast-cliche`         | "not just X, but Y" and "it's not X, it's Y"                                                                       |
+| `contrast-cliche`         | "not just X, but Y", "it's not X, it's Y", and "X, not Y: the rest"                                                |
 | `rhetorical-question`     | "Why? Because" and "The result?"                                                                                   |
 | `emoji-list`              | List items that start with an emoji                                                                                |
 | `no-short-term-relevance` | Comments that stop making sense once the change lands: "no longer", "no behavior change", "for now", "Previously," |
