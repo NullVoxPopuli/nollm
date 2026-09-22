@@ -1,9 +1,9 @@
 import { execFile } from "node:child_process";
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, test } from "vitest";
-import { bin, copyFixture } from "./helpers.js";
+import { bin, copyFixture, copyFixtureRepo } from "./helpers.js";
 
 const run = promisify(execFile);
 let cleanup = async () => {};
@@ -83,6 +83,62 @@ describe("cli", () => {
     expect(stdout).toContain("src/math.py");
   });
 
+  test("--diff reports only the lines the branch touched", async () => {
+    const copy = await copyFixtureRepo("project");
+    cleanup = copy.cleanup;
+    const dir = copy.dir;
+
+    // Line 3 of README.md already has findings. Edit line 9 and leave it alone.
+    const readme = await readFile(join(dir, "README.md"), "utf8");
+    await writeFile(join(dir, "README.md"), readme.replace("Hope this helps!", "Let me know if"));
+
+    const { code, stdout } = await nollm(["--diff", "main"], dir);
+    expect(code).toBe(1);
+    expect(stdout).toContain("README.md");
+    expect(stdout).toContain('9:1  "Let me know if"');
+    expect(stdout).not.toContain("simply");
+    expect(stdout).not.toContain("src/index.js");
+    expect(stdout).toMatch(/2 problems in 1 file \(1 files checked, [\d.]+s\)\n$/);
+  });
+
+  test("--diff exits with 0 when the branch adds nothing to report", async () => {
+    const copy = await copyFixtureRepo("project");
+    cleanup = copy.cleanup;
+    const dir = copy.dir;
+    await writeFile(join(dir, "docs", "notes.txt"), "Plain notes.\n\nStill nothing.\n");
+
+    const { code, stdout } = await nollm(["--diff", "main"], dir);
+    expect(code).toBe(0);
+    expect(stdout).toContain("0 problems in 0 files (1 files checked");
+  });
+
+  test("--diff narrows to the given paths", async () => {
+    const copy = await copyFixtureRepo("project");
+    cleanup = copy.cleanup;
+    const dir = copy.dir;
+    await writeFile(join(dir, "docs", "notes.txt"), "Plain notes.\n\nDelve into it.\n");
+    await writeFile(join(dir, "src", "math.py"), "# Delve into it\n");
+
+    const { stdout } = await nollm(["--diff", "main", "docs"], dir);
+    expect(stdout).toContain("docs/notes.txt");
+    expect(stdout).not.toContain("src/math.py");
+  });
+
+  test("--diff rejects an unknown ref", async () => {
+    const copy = await copyFixtureRepo("project");
+    cleanup = copy.cleanup;
+    const { code, stderr } = await nollm(["--diff", "no-such-branch"], copy.dir);
+    expect(code).toBe(2);
+    expect(stderr).toContain('Could not diff against "no-such-branch"');
+  });
+
+  test("--diff outside a git repository is a usage error", async () => {
+    const dir = await project();
+    const { code, stderr } = await nollm(["--diff", "main"], dir);
+    expect(code).toBe(2);
+    expect(stderr).toContain('Could not diff against "main"');
+  });
+
   test("respects the config file", async () => {
     const dir = await project();
     await writeFile(
@@ -110,6 +166,11 @@ describe("cli", () => {
     const dir = await project();
     const { stdout } = await nollm(["--no-git", "--quiet"], dir);
     expect(stdout.trim().split("\n")).toHaveLength(1);
+  });
+
+  test("--help lists --diff", async () => {
+    const { stdout } = await nollm(["--help"], process.cwd());
+    expect(stdout).toContain("--diff <ref>");
   });
 
   test("--list-rules prints every rule", async () => {

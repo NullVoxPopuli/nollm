@@ -86,6 +86,8 @@ export interface LintOptions {
   cwd?: string;
   configPath?: string;
   git?: boolean;
+  /** A git ref. Only lines added or changed since the merge base are reported. */
+  diff?: string;
   jobs?: number;
   onResult?: (result: FileResult) => void;
 }
@@ -97,6 +99,11 @@ export function check(filePath: string, source: string, rules?: Rule[]): Finding
 export function classify(
   filePath: string,
 ): { kind: "prose" } | { kind: "code"; language: Language } | null;
+export const ALL_LINES: true;
+export function changedLines(
+  base: string,
+  options?: { cwd?: string },
+): Promise<Map<string, Set<number> | typeof ALL_LINES>>;
 export function collectFiles(
   roots: string[],
   options?: { cwd?: string; git?: boolean; ignore?: string[] },
