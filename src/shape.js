@@ -11,6 +11,86 @@ const TRAILER = /\s*(?:\*\/|-->|"""|''')\s*$/;
 const LIST_ITEM = /^(?:[-*+]|\d+[.)])\s+|^@\w+/;
 const SENTENCE_END = /[.!?]+(?:["')\]]+)?(?:\s+|$)/;
 
+/**
+ * Words that cannot end a thought.
+ * They point at whatever comes next,
+ * so a line that stops on one stopped in the middle of a phrase.
+ *
+ * Words that can stand at the end of a clause stay out, however often they
+ * also appear mid phrase. "Yes it can" and "give it to her" are ordinary,
+ * so can and her are not here.
+ */
+export const DANGLING_WORDS = [
+  "a",
+  "an",
+  "the",
+  "of",
+  "to",
+  "in",
+  "on",
+  "at",
+  "by",
+  "for",
+  "with",
+  "from",
+  "into",
+  "onto",
+  "upon",
+  "over",
+  "under",
+  "about",
+  "across",
+  "after",
+  "before",
+  "between",
+  "during",
+  "through",
+  "toward",
+  "towards",
+  "within",
+  "without",
+  "against",
+  "among",
+  "around",
+  "beyond",
+  "per",
+  "via",
+  "and",
+  "or",
+  "but",
+  "nor",
+  "that",
+  "which",
+  "who",
+  "whom",
+  "whose",
+  "if",
+  "when",
+  "while",
+  "because",
+  "although",
+  "though",
+  "unless",
+  "until",
+  "since",
+  "whether",
+  "is",
+  "are",
+  "was",
+  "were",
+  "has",
+  "have",
+  "had",
+  "its",
+  "their",
+  "your",
+  "our",
+  "my",
+  "every",
+];
+
+const DANGLING_END = new RegExp(String.raw`\b(${DANGLING_WORDS.join("|")})\s*$`, "i");
+
 export const WALL_WORDS = 120;
 export const WALL_SENTENCES = 7;
 export const LONG_SENTENCE_WORDS = 30;
@@ -23,8 +103,8 @@ export const UNIFORM_SENTENCE_VARIATION = 0.2;
 /**
  * Groups segments into paragraphs.
  *
- * Pass inComments: true for comment segments, so that
- * comment markers are removed before counting.
+ * Pass inComments: true for comment segments,
+ * so comment markers are removed before counting.
  *
  * Each paragraph has:
  *   line, column → where it starts
@@ -259,4 +339,57 @@ function wordCount(text) {
 function preview(text) {
   const words = text.split(/\s+/, 6);
   return words.join(" ") + (words.length === 6 ? "..." : "");
+}
+
+/**
+ * Line breaks that land in the middle of a phrase.
+ *
+ * A break reads as a pause, so the line before it should be able to stop.
+ * A line ending on a word that points at the next one cannot.
+ *
+ * Only a break the next line carries on counts.
+ * A blank line, a heading, a table, a fence, or a new list item
+ * each end the thought by themselves, so the line before one is skipped.
+ */
+export function midPhraseBreaks(segments, scope) {
+  const inComments = scope === "comments";
+  const found = [];
+  let fence = false;
+  let previous = null;
+
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i];
+    const text = inComments ? strip(segment.text) : segment.text.trim();
+
+    if (text.startsWith("```") || text.startsWith("~~~")) {
+      fence = !fence;
+      previous = null;
+      continue;
+    }
+
+    if (fence || text.length === 0 || text.startsWith("#") || text.startsWith("|")) {
+      previous = null;
+      continue;
+    }
+
+    const carriesOn = previous !== null && segment.line === previous.line + 1;
+    if (carriesOn && !LIST_ITEM.test(text)) {
+      const match = DANGLING_END.exec(previous.text);
+      if (match) {
+        found.push({
+          line: previous.line,
+          column: previous.column + match.index,
+          text: match[1],
+        });
+      }
+    }
+
+    previous = {
+      text,
+      line: segment.line,
+      column: segment.column + segment.text.indexOf(text),
+    };
+  }
+
+  return found;
 }

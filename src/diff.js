@@ -22,14 +22,14 @@ export const ALL_LINES = true;
 /**
  * The lines a branch adds or changes, per file.
  *
- * Returns a Map from path to a Set of line numbers in the new file, or to
- * ALL_LINES when the whole file is new.
+ * Returns a Map from path to a Set of line numbers in the new file,
+ * or to ALL_LINES when the whole file is new.
  * Paths are relative to cwd, so they match what collectFiles returns.
  *
  * The comparison starts at the merge base of base and the working tree, so
  * commits that land on base after the branch point stay out of the result.
- * Uncommitted edits and files git does not track yet count as part of the
- * branch, so the same call works before a push.
+ * Uncommitted edits and files git does not track yet count as part of the branch,
+ * so the same call works before a push.
  *
  * Files with no added or changed lines are left out. So are deleted files.
  */
@@ -124,9 +124,10 @@ async function real(path) {
 /**
  * Says what is wrong with a base ref before git says it less clearly.
  *
- * A checkout that fetched one branch, or fetched to a shallow depth, is the
- * usual reason a ref is missing. CI does both by default, so the ref a pull
- * request is against is often the one that is not there.
+ * A checkout that fetched one branch, or fetched to a shallow depth,
+ * is the usual reason a ref is missing.
+ * CI does both by default,
+ * so the ref a branch is compared against is often the one that is missing.
  */
 async function checkBase(dir) {
   if ((await tryGit(["rev-parse", "--is-inside-work-tree"], dir)) === null) {
@@ -166,9 +167,10 @@ async function noMergeBase(base, dir) {
 /**
  * How to fetch a missing ref. "origin/develop" needs "origin develop".
  *
- * A branch name may hold a slash of its own, so the first part counts as a
- * remote only when the repository lists it as one. A repository with no
- * remotes gives nothing to check against, so the usual reading wins.
+ * A branch name may hold a slash of its own,
+ * so the first part counts as a remote only when the repository lists it as one.
+ * A repository with no remotes gives nothing to check against,
+ * so the usual reading wins.
  */
 async function fetchArgs(base, cwd) {
   const cut = base.indexOf("/");
@@ -220,8 +222,9 @@ async function untracked(cwd) {
 /**
  * Reads a unified diff produced with --unified=0 and --no-prefix.
  *
- * Every file starts with a "diff --git" line, so that line marks where the
- * next "+++" is a header and not a line of added content that starts with "++".
+ * Every file starts with a "diff --git" line,
+ * so that line marks where the next "+++" is a header,
+ * and not a line of added content that starts with "++".
  */
 function parse(patch) {
   const changed = new Map();
