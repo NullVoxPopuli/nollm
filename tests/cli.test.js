@@ -15,11 +15,11 @@ afterEach(async () => {
   while (outside.length > 0) await rm(outside.pop(), { recursive: true, force: true });
 });
 
-async function nollm(args, cwd) {
+async function nollm(args, cwd, env = {}) {
   try {
     const result = await run(process.execPath, [bin].concat(args), {
       cwd,
-      env: { ...process.env, NO_COLOR: "1" },
+      env: { ...process.env, NO_COLOR: "1", GITHUB_ACTIONS: "", ...env },
     });
     return { code: 0, ...result };
   } catch (error) {
@@ -226,21 +226,42 @@ describe("cli", () => {
     const dir = await repo();
     const { code, stderr } = await nollm(["--diff", "origin/develop"], dir);
     expect(code).toBe(2);
-    expect(stderr).toMatchInlineSnapshot(`
-      "Could not find "origin/develop".
-      Fetch it with: git fetch origin develop
-      In GitHub Actions, set fetch-depth: 0 on actions/checkout.
-      "
-    `);
+    expect(stderr).toContain('Could not find "origin/develop" in ');
+    expect(stderr).toContain("fetch origin develop");
+    expect(stderr).not.toContain("GitHub Actions");
+  });
+
+  test("--diff names the checkout setting only inside GitHub Actions", async () => {
+    const dir = await repo();
+    const { stderr } = await nollm(["--diff", "origin/develop"], dir, { GITHUB_ACTIONS: "true" });
+    expect(stderr).toContain("In GitHub Actions, set fetch-depth: 0 on actions/checkout.");
+  });
+
+  test("--diff reads the repository a path points at, not the one it runs in", async () => {
+    const away = await project();
+    const copy = await copyFixtureRepo("project");
+    outside.push(copy.dir);
+    const target = copy.dir;
+
+    const readme = await readFile(join(target, "README.md"), "utf8");
+    await writeFile(
+      join(target, "README.md"),
+      readme.replace("Hope this helps!", "Let me know if"),
+    );
+
+    // away is a plain directory with no git in it, so a diff run there fails.
+    const { code, stdout } = await nollm(["--diff", "main", target], away);
+    expect(code).toBe(1);
+    expect(stdout).toContain("README.md");
+    expect(stdout).toContain('9:1  "Let me know if"');
+    expect(stdout).toContain("1 file");
   });
 
   test("--diff outside a git repository is a usage error", async () => {
     const dir = await project();
     const { code, stderr } = await nollm(["--diff", "main"], dir);
     expect(code).toBe(2);
-    expect(stderr).toContain(
-      'Not a git repository, so there is nothing to compare "main" against.',
-    );
+    expect(stderr).toContain("Not a git repository, so --diff has nothing to compare:");
   });
 
   test("respects the config file", async () => {

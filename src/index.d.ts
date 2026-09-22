@@ -102,7 +102,7 @@ export function classify(
 export const ALL_LINES: true;
 export function changedLines(
   base: string,
-  options?: { cwd?: string },
+  options?: { cwd?: string; roots?: string[] },
 ): Promise<Map<string, Set<number> | typeof ALL_LINES>>;
 export function collectFiles(
   roots: string[],

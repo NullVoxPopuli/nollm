@@ -1,3 +1,4 @@
+import { realpath } from "node:fs/promises";
 import { resolve } from "node:path";
 import { Tinypool } from "tinypool";
 import { findConfig, loadConfig } from "./config.js";
@@ -26,10 +27,14 @@ export async function lint({
   const config = await loadConfig(resolvedConfig);
   let files = await collectFiles(roots, { cwd, git, ignore: config.ignore });
 
+  // collectFiles labels files against the real cwd, so absolute paths built
+  // from those labels line up with the ones the diff reports.
   let changed = null;
+  let base = cwd;
   if (diff) {
-    changed = await changedLines(diff, { cwd });
-    files = files.filter((file) => changed.has(file));
+    changed = await changedLines(diff, { cwd, roots });
+    base = await realCwd(cwd);
+    files = files.filter((file) => changed.has(resolve(base, file)));
   }
 
   // The pool is torn down when this function ends, however it ends.
@@ -47,7 +52,7 @@ export async function lint({
   const pending = [];
   for (let i = 0; i < files.length; i++) {
     const done = pool.run(files[i]).then((result) => {
-      if (changed) result = onlyChanged(result, changed.get(result.file));
+      if (changed) result = onlyChanged(result, changed.get(resolve(base, result.file)));
       if (!result.skipped) summary.checked++;
       if (result.findings.length > 0) {
         summary.findings += result.findings.length;
@@ -60,6 +65,14 @@ export async function lint({
   await Promise.all(pending);
 
   return summary;
+}
+
+async function realCwd(cwd) {
+  try {
+    return await realpath(cwd);
+  } catch {
+    return cwd;
+  }
 }
 
 /**

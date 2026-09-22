@@ -98,9 +98,12 @@ A finding is kept by the line it points at.
 A rule that reports at the top of a block, such as `wall-of-text`, stays quiet
 when the branch grows a paragraph further down.
 
-The base ref has to be in the local clone. A shallow checkout, or one that
-fetched a single branch, does not have it, and `nollm` then names the command
-that fetches it.
+The diff is read in the repository the paths point at, not the one you happen
+to stand in, so `nollm --diff main /srv/site` works from anywhere.
+
+The base ref has to be in that clone. A shallow checkout, or one that fetched
+a single branch, does not have it, and `nollm` then names the command that
+fetches it.
 
 In GitHub Actions, fetch the base branch first:
 
