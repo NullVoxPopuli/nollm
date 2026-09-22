@@ -58,7 +58,7 @@ async function elsewhere() {
  */
 function stable(stdout, dir = null) {
   const timeless = stdout.replace(/, [\d.]+s\)/, ", Xs)");
-  return dir === null ? timeless : timeless.split(dir).join("<outside>");
+  return dir === null ? timeless : timeless.replaceAll(dir, "<outside>");
 }
 
 describe("cli", () => {

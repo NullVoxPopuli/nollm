@@ -1,12 +1,19 @@
 import { execFile } from "node:child_process";
-import { readdir, readFile, realpath, stat } from "node:fs/promises";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { readFileSync } from "node:fs";
+import { glob, realpath, stat } from "node:fs/promises";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 import ignore from "ignore";
 
 const run = promisify(execFile);
 
 const ALWAYS_SKIPPED = new Set([".git", "node_modules"]);
+
+/**
+ * glob leaves dotfiles out unless a pattern asks for them, and the tool checks
+ * files such as .gitignore and everything under .github.
+ */
+const EVERYTHING = ["**/*", "**/.*", "**/.*/**"];
 
 /**
  * Lists the files to check.
@@ -86,43 +93,61 @@ async function fromGit(roots, cwd) {
 async function fromWalk(roots, base) {
   const files = [];
   for (let i = 0; i < roots.length; i++) {
-    const absolute = roots[i];
-    const info = await stat(absolute);
+    const root = roots[i];
+    const info = await stat(root);
     if (info.isFile()) {
-      files.push(label(base, absolute));
+      files.push(label(base, root));
       continue;
     }
-    await walk(absolute, base, [], files);
+
+    const entries = glob(EVERYTHING, { cwd: root, withFileTypes: true, exclude: skips(root) });
+    for await (const entry of entries) {
+      if (entry.isFile()) files.push(label(base, join(entry.parentPath, entry.name)));
+    }
   }
   return files;
 }
 
-async function walk(dir, base, filters, files) {
-  const local = await readIgnore(dir);
-  const active = local ? filters.concat([local]) : filters;
-  const entries = await readdir(dir, { withFileTypes: true });
+/**
+ * Tells glob which entries to leave out. Saying yes to a directory prunes it,
+ * so an ignored tree is never opened.
+ *
+ * A .gitignore applies to the directory that holds it and to everything below.
+ * So each entry is matched against the chain of files from the root down to
+ * its own directory. Chains are built once per directory and kept.
+ *
+ * glob asks this question synchronously, so the reads are synchronous. It is
+ * one small file per directory, which is what the walk read before.
+ */
+function skips(root) {
+  const chains = new Map();
 
-  for (let i = 0; i < entries.length; i++) {
-    const entry = entries[i];
-    if (ALWAYS_SKIPPED.has(entry.name)) continue;
+  const chainFor = (dir) => {
+    const known = chains.get(dir);
+    if (known) return known;
 
-    const absolute = join(dir, entry.name);
+    const parent = dir === root || dirname(dir) === dir ? [] : chainFor(dirname(dir));
+    const local = readIgnore(dir);
+    const chain = local ? parent.concat([local]) : parent;
+    chains.set(dir, chain);
+    return chain;
+  };
+
+  return (entry) => {
+    if (ALWAYS_SKIPPED.has(entry.name)) return true;
+
     const isDir = entry.isDirectory();
-    if (!isDir && !entry.isFile()) continue;
-    if (isIgnored(absolute, isDir, active)) continue;
+    if (!isDir && !entry.isFile()) return true;
 
-    if (isDir) {
-      await walk(absolute, base, active, files);
-    } else {
-      files.push(label(base, absolute));
-    }
-  }
+    const absolute = join(entry.parentPath, entry.name);
+    return isIgnored(absolute, isDir, chainFor(entry.parentPath));
+  };
 }
 
-async function readIgnore(dir) {
+function readIgnore(dir) {
   let content;
   try {
-    content = await readFile(join(dir, ".gitignore"), "utf8");
+    content = readFileSync(join(dir, ".gitignore"), "utf8");
   } catch {
     return null;
   }

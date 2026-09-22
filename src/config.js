@@ -75,7 +75,7 @@ function resolveRules(overrides = {}, words = []) {
   }
 
   if (words.length > 0) {
-    const escaped = words.map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const escaped = words.map((word) => RegExp.escape(word));
     rules.push({
       id: "custom-word",
       message: "Banned word (nollm config)",

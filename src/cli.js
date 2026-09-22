@@ -123,29 +123,14 @@ export async function main(
  * Findings are grouped by rule, in order of first appearance.
  */
 function formatFile(file, findings, paint) {
-  const groups = new Map();
-  for (let i = 0; i < findings.length; i++) {
-    const finding = findings[i];
-    let group = groups.get(finding.ruleId);
-    if (!group) {
-      group = { message: finding.message, items: [] };
-      groups.set(finding.ruleId, group);
-    }
-    group.items.push(finding);
-  }
-
   let out = `${paint("underline", file)}\n`;
-  for (const [ruleId, group] of groups) {
-    out += `  ${paint("yellow", ruleId)}  ${group.message}\n`;
 
-    let width = 0;
-    for (let i = 0; i < group.items.length; i++) {
-      const item = group.items[i];
-      width = Math.max(width, `${item.line}:${item.column}`.length);
-    }
+  for (const [ruleId, items] of Map.groupBy(findings, (finding) => finding.ruleId)) {
+    out += `  ${paint("yellow", ruleId)}  ${items[0].message}\n`;
 
-    for (let i = 0; i < group.items.length; i++) {
-      const item = group.items[i];
+    const width = Math.max(...items.map((item) => `${item.line}:${item.column}`.length));
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
       const where = `${item.line}:${item.column}`.padEnd(width);
       out += `    ${paint("dim", where)}  ${JSON.stringify(item.text)}\n`;
     }

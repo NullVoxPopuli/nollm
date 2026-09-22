@@ -96,6 +96,19 @@ describe("config", () => {
     expect(todo.scope).toBe("comments");
   });
 
+  test("takes a word apart from the regex characters in it", async () => {
+    const { path } = await withConfig(`export default { words: ["x*y", "a.b"] };\n`);
+    const config = await loadConfig(path);
+    const { pattern } = config.rules.find((rule) => rule.id === "custom-word");
+
+    expect("we use x*y here".match(pattern)).toEqual(["x*y"]);
+    expect("we use a.b here".match(pattern)).toEqual(["a.b"]);
+
+    // A live * would match "xxxy" here, and a live . would match "axb".
+    expect("we use xxxy here".match(pattern)).toBeNull();
+    expect("we use axb here".match(pattern)).toBeNull();
+  });
+
   test("changes the scope of a built in rule and keeps its pattern", async () => {
     const { path } = await withConfig(
       'export default { rules: { "em-dash": { scope: "text" } } };\n',

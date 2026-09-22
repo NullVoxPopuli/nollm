@@ -2,11 +2,10 @@ import { execFileSync } from "node:child_process";
 import { cp, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { check, classify, extractComments } from "../src/index.js";
 
-export const fixtures = fileURLToPath(new URL("./fixtures/", import.meta.url));
-export const bin = fileURLToPath(new URL("../bin/nollm.js", import.meta.url));
+export const fixtures = join(import.meta.dirname, "fixtures");
+export const bin = join(import.meta.dirname, "..", "bin", "nollm.js");
 
 /**
  * Copies a fixture project into a fresh temp directory.
