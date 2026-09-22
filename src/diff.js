@@ -21,6 +21,8 @@ export const ALL_LINES = true;
  * Files with no added or changed lines are left out. So are deleted files.
  */
 export async function changedLines(base, { cwd = process.cwd() } = {}) {
+  await checkBase(base, cwd);
+
   const args = [
     "diff",
     "--no-color",
@@ -39,12 +41,82 @@ export async function changedLines(base, { cwd = process.cwd() } = {}) {
     ({ stdout } = await run("git", args, { cwd, maxBuffer: 256 * 1024 * 1024 }));
   } catch (error) {
     const reason = firstLine(error.stderr) ?? error.message;
+    if (reason.includes("no merge base")) throw await noMergeBase(base, cwd);
     throw new Error(`Could not diff against "${base}": ${reason}`);
   }
 
   const changed = parse(stdout);
   for (const file of await untracked(cwd)) changed.set(file, ALL_LINES);
   return changed;
+}
+
+/**
+ * Says what is wrong with a base ref before git says it less clearly.
+ *
+ * A checkout that fetched one branch, or fetched to a shallow depth, is the
+ * usual reason a ref is missing. CI does both by default, so the ref a pull
+ * request is against is often the one that is not there.
+ */
+async function checkBase(base, cwd) {
+  if ((await tryGit(["rev-parse", "--is-inside-work-tree"], cwd)) === null) {
+    throw new Error(`Not a git repository, so there is nothing to compare "${base}" against.`);
+  }
+
+  if ((await tryGit(["rev-parse", "--verify", "-q", `${base}^{commit}`], cwd)) !== null) return;
+
+  throw new Error(
+    [
+      `Could not find "${base}".`,
+      `Fetch it with: git fetch ${await fetchArgs(base, cwd)}`,
+      "In GitHub Actions, set fetch-depth: 0 on actions/checkout.",
+    ].join("\n"),
+  );
+}
+
+/**
+ * The error for a ref that exists but shares no history with the branch.
+ */
+async function noMergeBase(base, cwd) {
+  const shallow = (await tryGit(["rev-parse", "--is-shallow-repository"], cwd))?.trim() === "true";
+  if (!shallow) {
+    return new Error(`"${base}" and the current branch share no history, so there is no diff.`);
+  }
+  return new Error(
+    [
+      `No merge base with "${base}". This clone is shallow, so the shared commit is missing.`,
+      "Deepen it with: git fetch --unshallow",
+      "In GitHub Actions, set fetch-depth: 0 on actions/checkout.",
+    ].join("\n"),
+  );
+}
+
+/**
+ * How to fetch a missing ref. "origin/develop" needs "origin develop".
+ *
+ * A branch name may hold a slash of its own, so the first part counts as a
+ * remote only when the repository lists it as one. A repository with no
+ * remotes gives nothing to check against, so the usual reading wins.
+ */
+async function fetchArgs(base, cwd) {
+  const cut = base.indexOf("/");
+  if (cut <= 0) return `origin ${base}`;
+
+  const listed = (await tryGit(["remote"], cwd))?.trim();
+  const remotes = listed ? listed.split("\n") : [];
+  if (remotes.length === 0 || remotes.includes(base.slice(0, cut))) {
+    return `${base.slice(0, cut)} ${base.slice(cut + 1)}`;
+  }
+  return `origin ${base}`;
+}
+
+/** Runs git and returns its output, or null when it fails. */
+async function tryGit(args, cwd) {
+  try {
+    const { stdout } = await run("git", args, { cwd });
+    return stdout;
+  } catch {
+    return null;
+  }
 }
 
 /**
