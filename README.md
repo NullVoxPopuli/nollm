@@ -30,7 +30,7 @@ Add a script to `package.json`:
 }
 ```
 
-Requires Node 22.13 or newer.
+Requires Node 24 or newer.
 
 ## Usage
 

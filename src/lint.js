@@ -32,32 +32,32 @@ export async function lint({
     files = files.filter((file) => changed.has(file));
   }
 
-  const pool = new Tinypool({
-    filename: new URL("./worker.js", import.meta.url).href,
-    workerData: { configPath: resolvedConfig, cwd },
-    maxThreads: jobs,
-  });
+  // The pool is torn down when this function ends, however it ends.
+  await using pool = Object.assign(
+    new Tinypool({
+      filename: new URL("./worker.js", import.meta.url).href,
+      workerData: { configPath: resolvedConfig, cwd },
+      maxThreads: jobs,
+    }),
+    { [Symbol.asyncDispose]: () => pool.destroy() },
+  );
 
   const summary = { files: files.length, checked: 0, findings: 0, filesWithFindings: 0 };
 
-  try {
-    const pending = [];
-    for (let i = 0; i < files.length; i++) {
-      const done = pool.run(files[i]).then((result) => {
-        if (changed) result = onlyChanged(result, changed.get(result.file));
-        if (!result.skipped) summary.checked++;
-        if (result.findings.length > 0) {
-          summary.findings += result.findings.length;
-          summary.filesWithFindings++;
-        }
-        onResult(result);
-      });
-      pending.push(done);
-    }
-    await Promise.all(pending);
-  } finally {
-    await pool.destroy();
+  const pending = [];
+  for (let i = 0; i < files.length; i++) {
+    const done = pool.run(files[i]).then((result) => {
+      if (changed) result = onlyChanged(result, changed.get(result.file));
+      if (!result.skipped) summary.checked++;
+      if (result.findings.length > 0) {
+        summary.findings += result.findings.length;
+        summary.filesWithFindings++;
+      }
+      onResult(result);
+    });
+    pending.push(done);
   }
+  await Promise.all(pending);
 
   return summary;
 }

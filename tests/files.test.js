@@ -70,6 +70,27 @@ describe("collectFiles", () => {
     expect(files.sort()).toEqual(["README.md", "src/.gitignore", "src/index.js", "src/math.py"]);
   });
 
+  test("walks into dot directories", async () => {
+    const dir = await fixture();
+    await mkdir(join(dir, ".github", "workflows"), { recursive: true });
+    await writeFile(join(dir, ".github", "workflows", "ci.yml"), "# build\n");
+
+    const files = await collectFiles(["."], { cwd: dir, git: false });
+    expect(files).toContain(".github/workflows/ci.yml");
+    expect(files).toContain(".gitignore");
+  });
+
+  test("never opens .git or node_modules", async () => {
+    const dir = await fixture();
+    await mkdir(join(dir, ".git"), { recursive: true });
+    await writeFile(join(dir, ".git", "notes.md"), "genuinely\n");
+    await mkdir(join(dir, "node_modules", "pkg"), { recursive: true });
+    await writeFile(join(dir, "node_modules", "pkg", "readme.md"), "genuinely\n");
+
+    const files = await collectFiles(["."], { cwd: dir, git: false });
+    expect(files.filter((f) => f.startsWith(".git/") || f.startsWith("node_modules/"))).toEqual([]);
+  });
+
   test("accepts an absolute root under cwd and reports relative paths", async () => {
     const dir = await fixture();
     const files = await collectFiles([join(dir, "src")], { cwd: dir, git: false });
