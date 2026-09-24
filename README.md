@@ -52,14 +52,16 @@ through a row of `..`.
 Ignore patterns from the config describe the project, so they apply under the
 current directory and leave paths outside it alone.
 
-| Option            | Effect                                                             |
-| ----------------- | ------------------------------------------------------------------ |
-| `--jobs <n>`      | Number of worker threads. Defaults to the CPU count.               |
-| `--config <path>` | Config file to use.                                                |
-| `--diff <ref>`    | Check only the lines this branch adds or changes since `<ref>`.    |
-| `--no-git`        | Do not ask git for the file list. Read `.gitignore` files instead. |
-| `--quiet`         | Print only the summary.                                            |
-| `--list-rules`    | Print every rule and exit.                                         |
+| Option                    | Effect                                                             |
+| ------------------------- | ------------------------------------------------------------------ |
+| `--jobs <n>`              | Number of worker threads. Defaults to the CPU count.               |
+| `--config <path>`         | Config file to use.                                                |
+| `--diff <ref>`            | Check only the lines this branch adds or changes since `<ref>`.    |
+| `--no-git`                | Do not ask git for the file list. Read `.gitignore` files instead. |
+| `--stdin`                 | Read the text from stdin. The path `-` does the same.              |
+| `--stdin-filename <name>` | Check stdin as if it were this file. Defaults to `stdin.md`.       |
+| `--quiet`                 | Print only the summary.                                            |
+| `--list-rules`            | Print every rule and exit.                                         |
 
 The exit code is 1 when there are findings, and 2 on a usage error.
 
@@ -79,6 +81,24 @@ src/index.js
 
 4 problems in 2 files (5 files checked, 0.07s)
 ```
+
+## Checking text from stdin
+
+Pass `-` to check text that is not in a file, such as a draft or a commit message:
+
+```
+pbpaste | nollm -
+git log -1 --format=%B | nollm -
+```
+
+Stdin is checked as markdown. To check it as another type, name a file.
+The name picks the language and labels the report. No file is read:
+
+```
+git show main:src/index.js | nollm --stdin-filename src/index.js
+```
+
+The config applies as usual. Stdin cannot be combined with paths or `--diff`.
 
 ## Checking only a pull request
 

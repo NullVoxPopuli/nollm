@@ -15,12 +15,14 @@ afterEach(async () => {
   while (outside.length > 0) await rm(outside.pop(), { recursive: true, force: true });
 });
 
-async function nollm(args, cwd, env = {}) {
+async function nollm(args, cwd, env = {}, input = "") {
   try {
-    const result = await run(process.execPath, [bin].concat(args), {
+    const running = run(process.execPath, [bin].concat(args), {
       cwd,
       env: { ...process.env, NO_COLOR: "1", GITHUB_ACTIONS: "", ...env },
     });
+    running.child.stdin.end(input);
+    const result = await running;
     return { code: 0, ...result };
   } catch (error) {
     return { code: error.code, stdout: error.stdout, stderr: error.stderr };
@@ -302,12 +304,16 @@ describe("cli", () => {
 
       Checks files for LLMisms and prints each finding as soon as it is found.
       Paths may be relative or absolute. Files that git ignores are skipped.
+      The path - reads the text from stdin instead.
 
       Options:
         --jobs, -j <n>     Number of worker threads (default: cpu count)
         --config <path>    Config file (default: nollm.config.js in the current directory)
         --diff <ref>       Check only the lines this branch adds or changes since <ref>
         --no-git           Do not ask git for the file list. Read .gitignore files instead
+        --stdin            Read the text from stdin. Same as the path -
+        --stdin-filename <name>
+                           Check stdin as if it were this file (default: stdin.md)
         --quiet, -q        Print only the summary
         --list-rules       Print every rule and exit
         --version, -v      Print the version and exit
@@ -316,6 +322,8 @@ describe("cli", () => {
       Examples:
         nollm docs/guide.md            a path relative to the current directory
         nollm /srv/site/docs/guide.md  an absolute path
+        pbpaste | nollm -              text from the clipboard, as markdown
+        git show HEAD:a.py | nollm --stdin-filename a.py
 
       Exit code 1 when there are findings. Exit code 2 on a usage error.
       "
@@ -333,5 +341,60 @@ describe("cli", () => {
     const { code, stderr } = await nollm(["--jobs", "zero"], process.cwd());
     expect(code).toBe(2);
     expect(stderr).toContain("--jobs needs a positive integer");
+  });
+
+  test("- checks the text on stdin as markdown", async () => {
+    const dir = await project();
+    const input = "# Notes\n\nThis is simply the best.\n";
+    const { code, stdout } = await nollm(["-"], dir, {}, input);
+    expect(code).toBe(1);
+    expect(stable(stdout)).toBe(
+      [
+        "stdin.md",
+        "  filler-word  Filler. Delete it or replace it",
+        '    3:9  "simply"',
+        "",
+        "1 problem in 1 file (1 files checked, Xs)",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  test("--stdin-filename picks the language and the label", async () => {
+    const dir = await project();
+    const input = "x = 1  # increment x\ny = 'simply a string'\n";
+    const { code, stdout } = await nollm(["--stdin-filename", "src/a.py"], dir, {}, input);
+    expect(code).toBe(1);
+    expect(stdout).toContain("src/a.py\n  what-comment");
+    expect(stdout).not.toContain("filler-word");
+  });
+
+  test("--stdin with clean text exits with 0", async () => {
+    const dir = await project();
+    const { code, stdout } = await nollm(["--stdin"], dir, {}, "All good here.\n");
+    expect(code).toBe(0);
+    expect(stable(stdout)).toBe("0 problems in 0 files (1 files checked, Xs)\n");
+  });
+
+  test("stdin uses the config", async () => {
+    const dir = await project();
+    await writeFile(join(dir, "nollm.config.js"), 'export default { words: ["zork"] };\n');
+    const { stdout } = await nollm(["-"], dir, {}, "A zork appears.\n");
+    expect(stdout).toContain('custom-word  Banned word (nollm config)\n    1:3  "zork"');
+  });
+
+  test("rejects stdin with paths, with --diff, or with an unknown file type", async () => {
+    const dir = await project();
+    const withPath = await nollm(["-", "README.md"], dir);
+    expect(withPath.code).toBe(2);
+    expect(withPath.stderr).toContain("Paths cannot be combined with stdin");
+
+    const withDiff = await nollm(["--stdin", "--diff", "main"], dir);
+    expect(withDiff.code).toBe(2);
+    expect(withDiff.stderr).toContain("--diff cannot be combined with stdin");
+
+    const unknown = await nollm(["--stdin-filename", "a.xyz"], dir, {}, "text");
+    expect(unknown.code).toBe(2);
+    expect(unknown.stderr).toContain('does not know how to check "a.xyz"');
   });
 });
