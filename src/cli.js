@@ -1,18 +1,29 @@
 import { createRequire } from "node:module";
+import { resolve } from "node:path";
+import { text as readAll } from "node:stream/consumers";
 import { parseArgs, styleText } from "node:util";
+import { check } from "./check.js";
+import { findConfig, loadConfig } from "./config.js";
+import { classify } from "./languages.js";
 import { lint } from "./lint.js";
 import { rules } from "./rules.js";
+
+const STDIN_FILENAME = "stdin.md";
 
 const HELP = `Usage: nollm [options] [paths...]
 
 Checks files for LLMisms and prints each finding as soon as it is found.
 Paths may be relative or absolute. Files that git ignores are skipped.
+The path - reads the text from stdin instead.
 
 Options:
   --jobs, -j <n>     Number of worker threads (default: cpu count)
   --config <path>    Config file (default: nollm.config.js in the current directory)
   --diff <ref>       Check only the lines this branch adds or changes since <ref>
   --no-git           Do not ask git for the file list. Read .gitignore files instead
+  --stdin            Read the text from stdin. Same as the path -
+  --stdin-filename <name>
+                     Check stdin as if it were this file (default: ${STDIN_FILENAME})
   --quiet, -q        Print only the summary
   --list-rules       Print every rule and exit
   --version, -v      Print the version and exit
@@ -21,13 +32,20 @@ Options:
 Examples:
   nollm docs/guide.md            a path relative to the current directory
   nollm /srv/site/docs/guide.md  an absolute path
+  pbpaste | nollm -              text from the clipboard, as markdown
+  git show HEAD:a.py | nollm --stdin-filename a.py
 
 Exit code 1 when there are findings. Exit code 2 on a usage error.
 `;
 
 export async function main(
   argv,
-  { stdout = process.stdout, stderr = process.stderr, cwd = process.cwd() } = {},
+  {
+    stdin = process.stdin,
+    stdout = process.stdout,
+    stderr = process.stderr,
+    cwd = process.cwd(),
+  } = {},
 ) {
   let parsed;
   try {
@@ -40,6 +58,8 @@ export async function main(
         config: { type: "string" },
         diff: { type: "string" },
         git: { type: "boolean", default: true },
+        stdin: { type: "boolean", default: false },
+        "stdin-filename": { type: "string" },
         quiet: { type: "boolean", short: "q", default: false },
         "list-rules": { type: "boolean", default: false },
         version: { type: "boolean", short: "v", default: false },
@@ -83,21 +103,44 @@ export async function main(
 
   const paint = (style, text) => styleText(style, text, { stream: stdout });
   const started = performance.now();
+  const fromStdin =
+    values.stdin || values["stdin-filename"] !== undefined || positionals.includes("-");
+
+  if (fromStdin) {
+    if (positionals.some((path) => path !== "-")) {
+      stderr.write("Paths cannot be combined with stdin. Check one or the other\n");
+      return 2;
+    }
+    if (values.diff !== undefined) {
+      stderr.write("--diff cannot be combined with stdin, since stdin has no git history\n");
+      return 2;
+    }
+  }
+
+  const onResult = (result) => {
+    if (values.quiet || result.findings.length === 0) return;
+    stdout.write(formatFile(result.file, result.findings, paint));
+  };
 
   let summary;
   try {
-    summary = await lint({
-      roots: positionals.length > 0 ? positionals : ["."],
-      cwd,
-      configPath: values.config,
-      git: values.git,
-      diff: values.diff,
-      jobs,
-      onResult(result) {
-        if (values.quiet || result.findings.length === 0) return;
-        stdout.write(formatFile(result.file, result.findings, paint));
-      },
-    });
+    summary = fromStdin
+      ? await lintStdin({
+          stdin,
+          file: values["stdin-filename"] ?? STDIN_FILENAME,
+          cwd,
+          configPath: values.config,
+          onResult,
+        })
+      : await lint({
+          roots: positionals.length > 0 ? positionals : ["."],
+          cwd,
+          configPath: values.config,
+          git: values.git,
+          diff: values.diff,
+          jobs,
+          onResult,
+        });
   } catch (error) {
     stderr.write(`${error.message}\n`);
     return 2;
@@ -110,6 +153,30 @@ export async function main(
 
   stdout.write(summary.findings > 0 ? paint("red", line) : paint("green", line));
   return summary.findings > 0 ? 1 : 0;
+}
+
+/**
+ * Checks the text on stdin as if it were the named file.
+ *
+ * The name picks the language and labels the report. No file is read.
+ * Returns the same summary as lint, for one file.
+ */
+async function lintStdin({ stdin, file, cwd, configPath, onResult }) {
+  if (!classify(file)) {
+    throw new Error(`nollm does not know how to check "${file}". Pass --stdin-filename a.md`);
+  }
+
+  const resolvedConfig = configPath ? resolve(cwd, configPath) : await findConfig(cwd);
+  const config = await loadConfig(resolvedConfig);
+  const findings = check(file, await readAll(stdin), config.rules);
+
+  onResult({ file, findings, skipped: null });
+  return {
+    files: 1,
+    checked: 1,
+    findings: findings.length,
+    filesWithFindings: findings.length > 0 ? 1 : 0,
+  };
 }
 
 /**
