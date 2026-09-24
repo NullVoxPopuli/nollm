@@ -270,6 +270,16 @@ const PR_TALK = [
   "existing behavior",
   "existing behaviour",
   "unchanged from",
+  // Explaining a step that is not there
+  "nothing to disable",
+  "nothing to turn off",
+  "nothing to uninstall",
+  "nothing to revert",
+  "nothing to opt out of",
+  "no need to disable",
+  "no need to turn off",
+  "no need to uninstall",
+  "no need to revert",
   // Leaving things as they were
   "keeping it off",
   "keeping it on",
