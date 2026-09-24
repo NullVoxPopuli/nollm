@@ -1,5 +1,16 @@
 # Changelog
 
+## Release (2026-09-24)
+
+* nollm 0.5.0 (minor)
+
+#### :rocket: Enhancement
+* `nollm`
+  * [#16](https://github.com/NullVoxPopuli/nollm/pull/16) Read text to check from stdin ([@NullVoxPopuli](https://github.com/NullVoxPopuli))
+
+#### Committers: 1
+- [@NullVoxPopuli](https://github.com/NullVoxPopuli)
+
 ## Release (2026-09-22)
 
 * nollm 0.4.0 (minor)

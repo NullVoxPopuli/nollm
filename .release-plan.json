@@ -2,21 +2,17 @@
   "solution": {
     "nollm": {
       "impact": "minor",
-      "oldVersion": "0.3.0",
-      "newVersion": "0.4.0",
+      "oldVersion": "0.4.0",
+      "newVersion": "0.5.0",
       "tagName": "latest",
       "constraints": [
         {
           "impact": "minor",
           "reason": "Appears in changelog section :rocket: Enhancement"
-        },
-        {
-          "impact": "patch",
-          "reason": "Appears in changelog section :bug: Bug Fix"
         }
       ],
       "pkgJSONPath": "./package.json"
     }
   },
-  "description": "## Release (2026-09-22)\n\n* nollm 0.4.0 (minor)\n\n#### :rocket: Enhancement\n* `nollm`\n  * [#15](https://github.com/NullVoxPopuli/nollm/pull/15) Flag a line break that lands mid phrase ([@NullVoxPopuli](https://github.com/NullVoxPopuli))\n\n#### :bug: Bug Fix\n* `nollm`\n  * [#13](https://github.com/NullVoxPopuli/nollm/pull/13) Catch \"X, not Y:\" as a contrast cliche ([@NullVoxPopuli](https://github.com/NullVoxPopuli))\n\n#### Committers: 1\n- [@NullVoxPopuli](https://github.com/NullVoxPopuli)\n"
+  "description": "## Release (2026-09-24)\n\n* nollm 0.5.0 (minor)\n\n#### :rocket: Enhancement\n* `nollm`\n  * [#16](https://github.com/NullVoxPopuli/nollm/pull/16) Read text to check from stdin ([@NullVoxPopuli](https://github.com/NullVoxPopuli))\n\n#### Committers: 1\n- [@NullVoxPopuli](https://github.com/NullVoxPopuli)\n"
 }
