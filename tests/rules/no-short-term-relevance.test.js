@@ -31,6 +31,15 @@ describe("no-short-term-relevance", () => {
     expect(ids(comment("never worked with node 22"))).toEqual(["no-short-term-relevance"]);
   });
 
+  test("flags comments that explain a step that is not there", () => {
+    expect(
+      texts(comment("No corepack in the non-dev image, so there is nothing to disable here.")),
+    ).toEqual(["nothing to disable"]);
+    expect(ids(comment("The flag is off by default, so no need to turn off"))).toEqual([
+      "no-short-term-relevance",
+    ]);
+  });
+
   test("flags scope and follow-up talk", () => {
     expect(ids(comment("disabled for now, will be removed in a follow-up"))).toEqual([
       "no-short-term-relevance",
