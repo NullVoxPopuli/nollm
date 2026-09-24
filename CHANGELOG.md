@@ -2,6 +2,17 @@
 
 ## Release (2026-09-24)
 
+* nollm 0.6.0 (minor)
+
+#### :rocket: Enhancement
+* `nollm`
+  * [#18](https://github.com/NullVoxPopuli/nollm/pull/18) no-short-term-relevance: flag comments that explain a step that is not there ([@NullVoxPopuli](https://github.com/NullVoxPopuli))
+
+#### Committers: 1
+- [@NullVoxPopuli](https://github.com/NullVoxPopuli)
+
+## Release (2026-09-24)
+
 * nollm 0.5.0 (minor)
 
 #### :rocket: Enhancement
