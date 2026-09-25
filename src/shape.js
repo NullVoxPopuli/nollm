@@ -6,8 +6,8 @@
  * A list item or a JSDoc tag starts a new paragraph.
  */
 
-const MARKER = /^\s*(?:\/\/+|#+|\*+|\/\*+|<!--|--|;+|%+|"""|''')?\s*/;
-const TRAILER = /\s*(?:\*\/|-->|"""|''')\s*$/;
+const MARKER = /^\s*(?:\/\/+|#+|\*+|\/\*+|<!--|\{\{!--|\{\{!|--|;+|%+|"""|''')?\s*/;
+const TRAILER = /\s*(?:\*\/|-->|--\}\}|\}\}|"""|''')\s*$/;
 const LIST_ITEM = /^(?:[-*+]|\d+[.)])\s+|^@\w+/;
 const SENTENCE_END = /[.!?]+(?:["')\]]+)?(?:\s+|$)/;
 
