@@ -109,4 +109,39 @@ describe("commented-out code", () => {
       "/**\n * Simply returns the thing.\n * @param {string} name\n * @returns {Thing}\n */\n";
     expect(check("a.js", source)).toMatchObject([{ line: 2, ruleId: "filler-word" }]);
   });
+
+  test("skips the lines of a commented-out block that read as prose", () => {
+    const source = [
+      "// const labels = {",
+      "//   simply: 'Simply put',",
+      "//   delve: 'Delve into it',",
+      "// }",
+      "",
+    ].join("\n");
+    expect(check("a.js", source)).toEqual([]);
+  });
+
+  test("skips a line of copy inside commented-out markup", () => {
+    const source = [
+      "<!-- <button type='button' class='rounded px-3 py-2 text-sm'>",
+      "  Simply save",
+      "</button>",
+      "<svg viewBox='0 0 24 24' fill='none' aria-hidden='true'>",
+      "  <path d='M22 9.81v1.04a2.06 2.06 0 0 0-.7-.12h-3.48c-1.55 0-2.8 1.26-2.8 2.8v1.66' />",
+      "</svg> -->",
+      "",
+    ].join("\n");
+    expect(check("a.html", source)).toEqual([]);
+  });
+
+  test("skips a diagram with words in it", () => {
+    const source = [
+      "//  ┌─────────┐    ┌─────────┐",
+      "//  │  login  │──▶ │ resolve │ ▼ (no error) → simply silent",
+      "//  └────┬────┘    └────┬────┘",
+      "//       │ popup-blocked?     │ submit",
+      "",
+    ].join("\n");
+    expect(check("a.js", source)).toEqual([]);
+  });
 });

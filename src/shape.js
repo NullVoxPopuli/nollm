@@ -306,6 +306,92 @@ function strip(text) {
   return text.replace(TRAILER, "").replace(MARKER, "").trim();
 }
 
+/**
+ * Drops the comment lines that are code: commented-out statements, markup
+ * and diagrams.
+ *
+ * Each token votes. Syntax votes for code: brackets, `=`, box drawing.
+ * A word votes for prose. An identifier or a number does not vote,
+ * since prose names code as often as code does.
+ * A quoted string votes once, as code.
+ *
+ * A line is code when code outvotes prose, or when it has no words.
+ * A tie leans code. When more than two thirds of a comment's lines lean code,
+ * every line in it is code, so a string inside commented-out code is skipped too.
+ * A tie in a prose comment stays prose.
+ *
+ * The gap a dropped line leaves ends the paragraph, as a blank line does.
+ */
+export function withoutCode(segments) {
+  const code = new Set();
+  for (const comment of comments(segments)) {
+    const votes = comment.map((segment) => vote(strip(segment.text)));
+    const spoken = votes.filter((v) => v.tokens > 0);
+    const mostlyCode = spoken.length > 1 && spoken.filter(leansCode).length * 3 > spoken.length * 2;
+    for (let i = 0; i < comment.length; i++) {
+      if (isCode(votes[i]) || (mostlyCode && votes[i].tokens > 0)) code.add(comment[i]);
+    }
+  }
+  return segments.filter((segment) => !code.has(segment));
+}
+
+const LINE_COMMENT = /^\s*(?:\/\/|#|--|;|%)/;
+const CLOSER = /(?:\*\/|-->|\}\}|"""|''')\s*$/;
+
+/**
+ * Groups segments by comment. A run of line comments is one comment, and so
+ * are the lines of one block comment. Two block comments stay apart.
+ */
+function comments(segments) {
+  const result = [];
+  let previous = null;
+  for (const segment of segments) {
+    const continues =
+      previous !== null &&
+      segment.line === previous.line + 1 &&
+      (LINE_COMMENT.test(previous.text)
+        ? LINE_COMMENT.test(segment.text)
+        : !CLOSER.test(previous.text));
+    if (continues) result[result.length - 1].push(segment);
+    else result.push([segment]);
+    previous = segment;
+  }
+  return result;
+}
+
+const WRAP_START = /^[("'“‘«*[]+/u;
+const WRAP_END = /[.,:;!?)"'”’»*\]]+$/u;
+const SYNTAX = /[{}()[\];=<>─-╿]/u;
+const PLAIN_WORD = /^\p{L}+(?:['’-]\p{L}+)*$/u;
+const IDENTIFIER = /\p{Ll}\p{Lu}|[._$]/u;
+
+/** A quoted span is one string, as a span of inline code is one word. */
+const STRING = /(?<![\p{L}\p{N}])(["'])[^"'\n]*\1(?![\p{L}\p{N}])/gu;
+
+function vote(text) {
+  const tokens =
+    text
+      .replace(/`[^`]*`/g, "code")
+      .replace(STRING, "=")
+      .match(/\S+/g) ?? [];
+  let code = 0;
+  let words = 0;
+  for (const token of tokens) {
+    const core = token.replace(WRAP_START, "").replace(WRAP_END, "");
+    if (SYNTAX.test(core)) code++;
+    else if (PLAIN_WORD.test(core) && !IDENTIFIER.test(core)) words++;
+  }
+  return { tokens: tokens.length, code, words };
+}
+
+function isCode({ tokens, code, words }) {
+  return tokens > 0 && (words === 0 || code > words);
+}
+
+function leansCode({ tokens, code, words }) {
+  return tokens > 0 && code >= words;
+}
+
 function sentenceSpans(text) {
   const spans = [];
   const ends = new RegExp(SENTENCE_END.source, "g");
