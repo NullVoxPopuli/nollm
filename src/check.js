@@ -1,6 +1,7 @@
 import { classify } from "./languages.js";
 import { extractComments, extractLines } from "./comments.js";
 import { rules as builtinRules } from "./rules.js";
+import { withoutCode } from "./shape.js";
 
 const IGNORE_FILE = "nollm-ignore-file";
 const IGNORE_NEXT = "nollm-ignore-next-line";
@@ -10,6 +11,7 @@ const IGNORE_NEXT = "nollm-ignore-next-line";
  *
  * A finding is { line, column, ruleId, message, text }.
  * Files this tool does not read return an empty array.
+ * Comment lines that are code, such as commented-out statements, are not read.
  *
  * A line that contains nollm-ignore-next-line silences the line after it.
  * A file that contains nollm-ignore-file returns no findings.
@@ -34,7 +36,7 @@ function collect(kind, source, rules) {
     return findings;
   }
 
-  run(findings, extractComments(source, kind.language), rules, "comments");
+  run(findings, withoutCode(extractComments(source, kind.language)), rules, "comments");
   run(findings, extractLines(source), rules, "everywhere");
   findings.sort(byPosition);
   return findings;
