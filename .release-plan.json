@@ -2,17 +2,21 @@
   "solution": {
     "nollm": {
       "impact": "minor",
-      "oldVersion": "0.5.0",
-      "newVersion": "0.6.0",
+      "oldVersion": "0.6.0",
+      "newVersion": "0.7.0",
       "tagName": "latest",
       "constraints": [
         {
           "impact": "minor",
           "reason": "Appears in changelog section :rocket: Enhancement"
+        },
+        {
+          "impact": "patch",
+          "reason": "Appears in changelog section :bug: Bug Fix"
         }
       ],
       "pkgJSONPath": "./package.json"
     }
   },
-  "description": "## Release (2026-09-24)\n\n* nollm 0.6.0 (minor)\n\n#### :rocket: Enhancement\n* `nollm`\n  * [#18](https://github.com/NullVoxPopuli/nollm/pull/18) no-short-term-relevance: flag comments that explain a step that is not there ([@NullVoxPopuli](https://github.com/NullVoxPopuli))\n\n#### Committers: 1\n- [@NullVoxPopuli](https://github.com/NullVoxPopuli)\n"
+  "description": "## Release (2026-09-25)\n\n* nollm 0.7.0 (minor)\n\n#### :rocket: Enhancement\n* `nollm`\n  * [#22](https://github.com/NullVoxPopuli/nollm/pull/22) Skip commented-out code in comments, by token vote ([@johanrd](https://github.com/johanrd))\n\n#### :bug: Bug Fix\n* `nollm`\n  * [#23](https://github.com/NullVoxPopuli/nollm/pull/23) Strip Glimmer comment markers before reading comments ([@johanrd](https://github.com/johanrd))\n\n#### Committers: 1\n- Johan Røed ([@johanrd](https://github.com/johanrd))\n"
 }

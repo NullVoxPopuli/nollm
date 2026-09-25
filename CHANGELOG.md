@@ -1,5 +1,20 @@
 # Changelog
 
+## Release (2026-09-25)
+
+* nollm 0.7.0 (minor)
+
+#### :rocket: Enhancement
+* `nollm`
+  * [#22](https://github.com/NullVoxPopuli/nollm/pull/22) Skip commented-out code in comments, by token vote ([@johanrd](https://github.com/johanrd))
+
+#### :bug: Bug Fix
+* `nollm`
+  * [#23](https://github.com/NullVoxPopuli/nollm/pull/23) Strip Glimmer comment markers before reading comments ([@johanrd](https://github.com/johanrd))
+
+#### Committers: 1
+- Johan Røed ([@johanrd](https://github.com/johanrd))
+
 ## Release (2026-09-24)
 
 * nollm 0.6.0 (minor)
