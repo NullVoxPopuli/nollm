@@ -41,7 +41,7 @@ describe("html family", () => {
   test("flags an em dash in a script comment", () => {
     const result = expectEmDashInComments(
       "a.vue",
-      "<script>// a — b</script>",
+      "<script>// a — b\n</script>",
       '<script>let s = "a — b"</script>',
     );
     expect(result).toEqual({ inComment: ["em-dash"], inCode: [] });

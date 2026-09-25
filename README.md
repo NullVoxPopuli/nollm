@@ -6,6 +6,7 @@ Pronounced "nollum": like gollum, with an n.
 
 `nollm` reads every file that git tracks or does not ignore.
 It checks prose files line by line, and code files comment by comment.
+Commented-out code is skipped: a comment line with fewer words than other tokens is code.
 Each finding prints as soon as it is found.
 
 ![!this project was created with claude code](https://i.imgflip.com/4h68b2.jpg)

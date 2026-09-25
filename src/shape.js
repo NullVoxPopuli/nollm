@@ -6,8 +6,18 @@
  * A list item or a JSDoc tag starts a new paragraph.
  */
 
-const MARKER = /^\s*(?:\/\/+|#+|\*+|\/\*+|<!--|--|;+|%+|"""|''')?\s*/;
-const TRAILER = /\s*(?:\*\/|-->|"""|''')\s*$/;
+const MARKER = /^\s*(?:\/\/+|#+|\*+|\/\*+|<!--|\{\{!--|\{\{!|--|;+|%+|"""|''')?\s*/;
+const TRAILER = /\s*(?:\*\/|-->|--\}\}|\}\}|"""|''')\s*$/;
+const FENCE = /^(?:```|~~~)/;
+
+/**
+ * A token that carries prose: a word, with the quotes and punctuation that
+ * may wrap it. An identifier such as appLink is code, since prose has no
+ * capital letter mid word. So is a datum such as 9.81v1.04: letters must
+ * hold their own against digits, which "v2" and "3rd" still do.
+ */
+const WORD = /^["'(\[“‘«]*[\p{L}\p{N}][\p{L}\p{N}'’._/-]*[.,:!?"')\]”’»]*$/u;
+const CAMEL = /\p{Ll}\p{Lu}/u;
 const LIST_ITEM = /^(?:[-*+]|\d+[.)])\s+|^@\w+/;
 const SENTENCE_END = /[.!?]+(?:["')\]]+)?(?:\s+|$)/;
 
@@ -304,6 +314,36 @@ export function uniformSentences(segments, scope) {
 
 function strip(text) {
   return text.replace(TRAILER, "").replace(MARKER, "").trim();
+}
+
+/**
+ * Drops the comment lines that are code: commented-out statements and markup,
+ * and diagrams. Words carry prose. Brackets, operators, quotes and identifiers
+ * carry code, so a line with fewer words than other tokens is code.
+ * A span of inline code counts as one word.
+ *
+ * The gap a dropped line leaves ends the paragraph, as a blank line does.
+ * Fences stay, so the code they wrap is still skipped.
+ */
+export function withoutCode(segments) {
+  return segments.filter((segment) => {
+    const text = strip(segment.text);
+    return FENCE.test(text) || !isCode(text);
+  });
+}
+
+function isCode(text) {
+  const tokens = text.replace(/`[^`]*`/g, "code").match(/\S+/g) ?? [];
+  let words = 0;
+  for (let i = 0; i < tokens.length; i++) if (isWord(tokens[i])) words++;
+  return words * 2 < tokens.length;
+}
+
+function isWord(token) {
+  if (!WORD.test(token) || CAMEL.test(token)) return false;
+  const letters = token.match(/\p{L}/gu)?.length ?? 0;
+  const digits = token.match(/\p{N}/gu)?.length ?? 0;
+  return letters >= digits;
 }
 
 function sentenceSpans(text) {
