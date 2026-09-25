@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { check } from "../../src/index.js";
 import { commentTexts, expectEmDashInComments } from "../helpers.js";
 
 describe("glimmer", () => {
@@ -47,5 +48,14 @@ describe("glimmer", () => {
       `${inTemplate}<p>a — b</p>${closing}`,
     );
     expect(result).toEqual({ inComment: ["em-dash"], inCode: [] });
+  });
+
+  test("reads a comment without its {{! }} markers", () => {
+    const source = [
+      "{{! This org can be updated, so it is a valid choice for the energy audit onboarding }}",
+      "{{! (We check this to avoid showing orgs that the user can see but cannot update, since updating is needed to turn on the feature) }}",
+      "",
+    ].join("\n");
+    expect(check("a.hbs", source)).toMatchObject([{ line: 1, column: 5, ruleId: "long-sentence" }]);
   });
 });
