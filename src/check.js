@@ -1,6 +1,7 @@
 import { classify } from "./languages.js";
 import { extractComments, extractLines } from "./comments.js";
 import { rules as builtinRules } from "./rules.js";
+import { withoutCode } from "./shape.js";
 
 const IGNORE_FILE = "nollm-ignore-file";
 const IGNORE_NEXT = "nollm-ignore-next-line";
@@ -34,7 +35,7 @@ function collect(kind, source, rules) {
     return findings;
   }
 
-  run(findings, extractComments(source, kind.language), rules, "comments");
+  run(findings, withoutCode(extractComments(source, kind.language)), rules, "comments");
   run(findings, extractLines(source), rules, "everywhere");
   findings.sort(byPosition);
   return findings;
