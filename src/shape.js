@@ -392,6 +392,22 @@ function leansCode({ tokens, code, words }) {
   return tokens > 0 && code >= words;
 }
 
+/**
+ * Drops fenced code: the fences and every line between them. No rule reads
+ * code, so this runs before all of them.
+ */
+export function withoutFences(segments, { inComments = false } = {}) {
+  let inFence = false;
+  return segments.filter((segment) => {
+    const text = inComments ? strip(segment.text) : segment.text.trim();
+    if (text.startsWith("```") || text.startsWith("~~~")) {
+      inFence = !inFence;
+      return false;
+    }
+    return !inFence;
+  });
+}
+
 function sentenceSpans(text) {
   const spans = [];
   const ends = new RegExp(SENTENCE_END.source, "g");

@@ -32,6 +32,19 @@ describe("check", () => {
     expect(ids(findings)).toEqual(["llm-vocabulary", "banned-word", "filler-word"]);
   });
 
+  test("does not read fenced code, in comments or in prose", () => {
+    const comment = [
+      "// Add this when the flag is on:",
+      "// ```ts",
+      "// declare module 'x' {}",
+      "// simply — really",
+      "// ```",
+      "",
+    ];
+    expect(check("a.ts", comment.join("\n"))).toEqual([]);
+    expect(check("a.md", "Use it:\n\n```js\n// simply\n```\n")).toEqual([]);
+  });
+
   test("honors nollm-ignore-next-line", () => {
     const source = "// nollm-ignore-next-line\n// genuinely\n// simply\n";
     expect(ids(check("a.js", source))).toEqual(["filler-word"]);
