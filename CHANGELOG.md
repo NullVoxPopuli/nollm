@@ -1,5 +1,16 @@
 # Changelog
 
+## Release (2026-10-15)
+
+* nollm 0.7.1 (patch)
+
+#### :bug: Bug Fix
+* `nollm`
+  * [#25](https://github.com/NullVoxPopuli/nollm/pull/25) Print a clear error on Node versions older than 24 ([@NullVoxPopuli](https://github.com/NullVoxPopuli))
+
+#### Committers: 1
+- [@NullVoxPopuli](https://github.com/NullVoxPopuli)
+
 ## Release (2026-09-26)
 
 * nollm 0.7.0 (minor)
