@@ -2,21 +2,17 @@
   "solution": {
     "nollm": {
       "impact": "minor",
-      "oldVersion": "0.7.0",
-      "newVersion": "0.8.0",
+      "oldVersion": "0.8.0",
+      "newVersion": "0.9.0",
       "tagName": "latest",
       "constraints": [
         {
           "impact": "minor",
           "reason": "Appears in changelog section :rocket: Enhancement"
-        },
-        {
-          "impact": "patch",
-          "reason": "Appears in changelog section :bug: Bug Fix"
         }
       ],
       "pkgJSONPath": "./package.json"
     }
   },
-  "description": "## Release (2026-10-19)\n\n* nollm 0.8.0 (minor)\n\n#### :rocket: Enhancement\n* `nollm`\n  * [#27](https://github.com/NullVoxPopuli/nollm/pull/27) Add a no-x-no-y rule ([@NullVoxPopuli-ai-agent](https://github.com/NullVoxPopuli-ai-agent))\n\n#### :bug: Bug Fix\n* `nollm`\n  * [#25](https://github.com/NullVoxPopuli/nollm/pull/25) Print a clear error on Node versions older than 24 ([@NullVoxPopuli](https://github.com/NullVoxPopuli))\n\n#### Committers: 2\n- @NullVoxPopuli's reduced-access machine account for AI usage ([@NullVoxPopuli-ai-agent](https://github.com/NullVoxPopuli-ai-agent))\n- [@NullVoxPopuli](https://github.com/NullVoxPopuli)\n"
+  "description": "## Release (2026-10-21)\n\n* nollm 0.9.0 (minor)\n\n#### :rocket: Enhancement\n* `nollm`\n  * [#28](https://github.com/NullVoxPopuli/nollm/pull/28) Add rules for the lines cut in review of deprecation-app#1443 ([@NullVoxPopuli-ai-agent](https://github.com/NullVoxPopuli-ai-agent))\n\n#### Committers: 1\n- @NullVoxPopuli's reduced-access machine account for AI usage ([@NullVoxPopuli-ai-agent](https://github.com/NullVoxPopuli-ai-agent))\n"
 }

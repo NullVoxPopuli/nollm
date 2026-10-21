@@ -1,5 +1,16 @@
 # Changelog
 
+## Release (2026-10-21)
+
+* nollm 0.9.0 (minor)
+
+#### :rocket: Enhancement
+* `nollm`
+  * [#28](https://github.com/NullVoxPopuli/nollm/pull/28) Add rules for the lines cut in review of deprecation-app#1443 ([@NullVoxPopuli-ai-agent](https://github.com/NullVoxPopuli-ai-agent))
+
+#### Committers: 1
+- @NullVoxPopuli's reduced-access machine account for AI usage ([@NullVoxPopuli-ai-agent](https://github.com/NullVoxPopuli-ai-agent))
+
 ## Release (2026-10-19)
 
 * nollm 0.8.0 (minor)
