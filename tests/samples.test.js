@@ -58,4 +58,37 @@ describe("samples", () => {
       "quoted-error",
     ]);
   });
+
+  test("catches the lines a reviewer cut from a deprecation guide", () => {
+    const source = [
+      "1. Derive the state. Use a getter that reads tracked state. This removes the subscription entirely.",
+      "2. Call the method directly. When the emitter knows its one consumer, an event adds indirection without decoupling anything.",
+      "",
+      "Events pushed a value into another object. Tracked properties already do this.",
+      "",
+      "```js",
+      "// app/services/session.js",
+      "export default class SessionService {}",
+      "```",
+      "",
+      "Use `registerDestructor`. No `willDestroy` hook or manual cleanup is necessary.",
+      "",
+      "Code that used the imported `on()` did that too. Both forms migrate the same way.",
+      "",
+      "You can still remove the subscription today.",
+      "",
+      "That clears the deprecation, and the move stays a separate change.",
+      "",
+    ].join("\n");
+    expect(ids(check("deprecated-evented.md", source))).toEqual([
+      "points-back",
+      "contrast-cliche",
+      "points-back",
+      "path-comment",
+      "nothing-needed",
+      "same-way",
+      "today",
+      "points-back",
+    ]);
+  });
 });

@@ -36,11 +36,12 @@ function escape(text) {
 }
 
 /**
- * Three shapes of one move: naming the thing it is not.
+ * Four shapes of one move: naming the thing it is not.
  *
  *   not just X, but Y
  *   it is not X, it is Y
  *   X, not Y: the rest
+ *   X without doing anything
  *
  * The third wants a label colon, so "a, not https://b" stays out. It also
  * stays on one line, so a wrapped block comment cannot join two sentences
@@ -50,6 +51,7 @@ const CONTRAST_CLICHES = [
   String.raw`\bnot (?:just|only|merely|simply) [^.\n]{1,60}?,? but(?: also)?\b`,
   String.raw`\bit'?s not (?:just |about )?[^.\n]{1,40}?[,;] it'?s\b`,
   String.raw`[^\s,:][^,:\n]{0,29},[ \t]+not[ \t]+[^,:\n]{1,30}:(?=\s|$)`,
+  String.raw`\bwithout \w+ing (?:anything|a thing)\b`,
 ];
 
 const BANNED_WORDS = [
@@ -488,11 +490,72 @@ const WHAT_COMMENT_STARTS = [
   "declare",
 ];
 
+/**
+ * Verbs that report what the sentence before achieved.
+ *
+ *   Derive the state. This removes the subscription entirely.
+ */
+const CONSEQUENCE_VERBS = [
+  "removes",
+  "eliminates",
+  "avoids",
+  "prevents",
+  "ensures",
+  "guarantees",
+  "keeps",
+  "clears",
+  "means",
+  "makes",
+  "lets",
+  "gives",
+  "saves",
+  "solves",
+  "fixes",
+  "frees",
+  "handles",
+  "covers",
+  "allows",
+  "enables",
+];
+
 // A comment starts after its marker, so the rule skips the marker first.
 const COMMENT_START = String.raw`^\s*(?:\/\/+|#+|\*+|\/\*+|<!--|--|;+|%+|"""|''')?\s*`;
 
 // The start of a comment or of a sentence, as a lookbehind.
 const SENTENCE_START = String.raw`(?<=${COMMENT_START}|[.!?:;]\s+)`;
+
+/**
+ * A short clause after the verb.
+ * A longer one usually carries a fact of its own:
+ *
+ *   This means the cache is empty after a deploy.
+ */
+const POINTS_BACK = [
+  String.raw`(?<=${COMMENT_START}(?:[-*+]\s+|\d+[.)]\s+)?|[.!?:;]\s+)(?:This|That) (?:${words(CONSEQUENCE_VERBS)})\b(?:[ \t]+[^\s.,;:!?]+){0,4}(?=[.,;!?])`,
+  String.raw`\b(?:already|also) (?:does|do|did|handles?|covers?|solves?) (?:this|that)(?=[.!])`,
+];
+
+const FENCE = /^\s*(?:```|~~~)/;
+const PATH_COMMENT =
+  /^\s*(?:\/\/+|\/\*+|#|<!--|\{\{!--|\{\{!)\s*[\w.@-]+(?:\/[\w.@[\]-]+)+\.\w+\s*(?:\*\/|-->|--\}\}|\}\})?\s*$/;
+
+/**
+ * The first line of a code block, when it is a comment with only a file path.
+ */
+function pathComments(segments) {
+  const found = [];
+  let inFence = false;
+  for (let i = 0; i < segments.length; i++) {
+    if (!FENCE.test(segments[i].text)) continue;
+    inFence = !inFence;
+    const next = segments[i + 1];
+    if (!inFence || !next || next.line !== segments[i].line + 1) continue;
+    if (!PATH_COMMENT.test(next.text)) continue;
+    const text = next.text.trim();
+    found.push({ line: next.line, column: next.column + next.text.indexOf(text), text });
+  }
+  return found;
+}
 
 export const rules = [
   {
@@ -599,6 +662,32 @@ export const rules = [
     id: "no-x-no-y",
     message: "Sentences in a row that start with No. Say what is there",
     check: noRuns,
+  },
+  {
+    id: "points-back",
+    message: "Sentence points back with this or that. Say a new fact, or delete it",
+    pattern: new RegExp(POINTS_BACK.join("|"), "gm"),
+  },
+  {
+    id: "nothing-needed",
+    message: "Sentence lists what is not needed. Say what to do",
+    pattern: /\bNo\b[^.\n]{1,60}\b(?:is|are) (?:necessary|needed|required)\b|\bneeds? neither\b/g,
+  },
+  {
+    id: "same-way",
+    message: "Sentence says that two things match. Name what they share, or delete it",
+    pattern: /\bthe same (?:way|thing)(?=[.!])/gi,
+  },
+  {
+    id: "today",
+    message: "The text outlives the day it was written. Delete today",
+    pattern: /\btoday(?=[.!])/gi,
+  },
+  {
+    id: "path-comment",
+    message: "Code block opens with a file path comment. Name the file outside the code",
+    check: pathComments,
+    scope: "everywhere",
   },
   {
     id: "mid-phrase-break",

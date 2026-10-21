@@ -33,11 +33,11 @@ describe("no-x-no-y", () => {
   });
 
   test("leaves a single No sentence alone", () => {
-    expect(ids(prose("No config is needed. Run the command.\n"))).toEqual([]);
+    expect(ids(prose("No config file exists. Run the command.\n"))).toEqual([]);
   });
 
   test("leaves No sentences in separate paragraphs alone", () => {
-    expect(ids(prose("No config is needed.\n\nNo build step runs.\n"))).toEqual([]);
+    expect(ids(prose("No config file exists.\n\nNo build step runs.\n"))).toEqual([]);
   });
 
   test("leaves separate list items alone", () => {

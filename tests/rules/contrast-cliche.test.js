@@ -23,6 +23,15 @@ describe("contrast-cliche", () => {
     ]);
   });
 
+  test("flags 'X without doing anything'", () => {
+    const findings = prose("An event adds indirection without decoupling anything.");
+    expect(texts(findings)).toEqual(["without decoupling anything"]);
+  });
+
+  test("leaves 'without' before a real object alone", () => {
+    expect(ids(prose("It runs without a network."))).toEqual([]);
+  });
+
   test("leaves a plain contrast without a label colon alone", () => {
     expect(ids(comment("Pass a string, not a number, to keep it simple."))).toEqual([]);
   });

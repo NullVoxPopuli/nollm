@@ -156,7 +156,7 @@ Files of other types, binary files, lockfiles, minified files, and files over 2 
 | `chat-opener`             | Lines that start with "Great question", "Certainly", "Let me", and more                                            |
 | `chat-closer`             | "Hope this helps", "Let me know if", "Feel free to", and more                                                      |
 | `ai-disclosure`           | "As an AI", "my training data", and more                                                                           |
-| `contrast-cliche`         | "not just X, but Y", "it's not X, it's Y", and "X, not Y: the rest"                                                |
+| `contrast-cliche`         | "not just X, but Y", "it's not X, it's Y", "X, not Y: the rest", and "without doing anything"                      |
 | `rhetorical-question`     | "Why? Because" and "The result?"                                                                                   |
 | `emoji-list`              | List items that start with an emoji                                                                                |
 | `no-short-term-relevance` | Comments that stop making sense once the change lands: "no longer", "no behavior change", "for now", "Previously," |
@@ -165,6 +165,11 @@ Files of other types, binary files, lockfiles, minified files, and files over 2 
 | `dramatic-verb`           | blows up, dies with, falls over, chokes on, and friends                                                            |
 | `parenthetical-aside`     | Asides like `(and their compiled handles)`                                                                         |
 | `no-x-no-y`               | Two or more sentences in a row that start with "No": "No config. No build step."                                   |
+| `points-back`             | A short sentence that reports what the one before did: "This removes the subscription entirely."                   |
+| `nothing-needed`          | "No hook or cleanup is necessary", "needs neither X nor Y"                                                         |
+| `same-way`                | A sentence that ends on "the same way" or "the same thing"                                                         |
+| `today`                   | "today" at the end of a sentence                                                                                   |
+| `path-comment`            | A code block whose first line is a comment with only a file path, such as `// app/models/post.js`                  |
 | `mid-phrase-break`        | A line that stops mid phrase, on a word such as the, of, or that                                                   |
 | `long-sentence`           | A sentence over 30 words                                                                                           |
 | `wall-of-text`            | A paragraph over 120 words or 7 sentences                                                                          |
